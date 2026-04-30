@@ -182,129 +182,103 @@
             document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
         }
 
-        window.confirmerReservation = async () => {
-            const btn = document.getElementById('btnSubmit');
-            const nom = document.getElementById('nom_loueur').value;
-            const email = document.getElementById('email_loueur').value;
-            const tel = document.getElementById('tel_loueur').value;
-            const debut = document.getElementById('date_debut').value;
-            const fin = document.getElementById('date_fin').value;
-            const totalP = document.getElementById('totalPrix').innerText;
-            const totalC = document.getElementById('totalCaution').innerText;
+       window.confirmerReservation = async () => {
+    const btn = document.getElementById('btnSubmit');
+    const nom = document.getElementById('nom_loueur').value;
+    const email = document.getElementById('email_loueur').value;
+    const tel = document.getElementById('tel_loueur').value;
+    const debut = document.getElementById('date_debut').value;
+    const fin = document.getElementById('date_fin').value;
+    const totalP = document.getElementById('totalPrix').innerText;
+    const totalC = document.getElementById('totalCaution').innerText;
 
-            if (!nom || !email || !debut || !fin || panier.length === 0) {
-                alert("Veuillez remplir tous les champs (Nom, Email, Dates) et choisir du matériel.");
-                return;
-            }
+    if (!nom || !email || !debut || !fin || panier.length === 0) {
+        alert("Veuillez remplir tous les champs (Nom, Email, Dates) et choisir du matériel.");
+        return;
+    }
 
-            btn.disabled = true;
-            btn.innerText = "Traitement en cours...";
+    btn.disabled = true;
+    btn.innerText = "Traitement en cours...";
 
-            try {
-                // 1. Envoi à Supabase
-                const { error } = await supabase.from('reservations').insert([{
-                    nom_loueur: nom, email: email, telephone: tel,
-                    date_debut: debut, date_fin: fin, articles: panier,
-                    total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
-                }]);
-                if (error) throw error;
+    try {
+        console.log("1. Tentative d'envoi Supabase...");
+        const { error } = await supabase.from('reservations').insert([{
+            nom_loueur: nom, email: email, telephone: tel,
+            date_debut: debut, date_fin: fin, articles: panier,
+            total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
+        }]);
+        if (error) throw new Error("Erreur Supabase: " + error.message);
+        console.log("✅ Supabase OK");
 
-                // 2. Construction du contenu HTML pour le PDF et le MAIL
-                const element = document.createElement('div');
-                element.style.padding = "30px";
-                element.style.fontSize = "12px";
-                element.innerHTML = `
-                    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; line-height: 1.4;">
-                        <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-                            CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON
-                        </h2>
+        // Construction du HTML pour le PDF et le Mail
+        const element = document.createElement('div');
+        element.innerHTML = `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>CONTRAT DE LOCATION - ECOLE STE ANNE</h2>
+                <p>Loueur : ${nom} (${email})</p>
+                <p>Dates : du ${debut} au ${fin}</p>
+                <hr>
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f3f4f6;">
+                            <th style="border: 1px solid #ddd; padding: 8px;">Article</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Qté</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${panier.map(a => `
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${a.nom}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${a.qty}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(a.qty * a.prix).toFixed(2)} €</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p><strong>Total : ${totalP}</strong></p>
+                <p><strong>Caution : ${totalC}</strong></p>
+            </div>
+        `;
 
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-                            <div>
-                                <h3 style="margin: 0;">OGEC SERVICE LOCATION</h3>
-                                <p style="margin: 0;">ECOLE SAINTE ANNE<br>2 Rue du château<br>44390 CASSON<br>location.ecolesteanne@gmail.com</p>
-                            </div>
-                            <div style="text-align: right; border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 200px;">
-                                <p style="margin: 0;"><strong>${nom}</strong></p>
-                                <p style="margin: 0;">Tél : ${tel}</p>
-                                <p style="margin: 0;">Mail : ${email}</p>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">1- Date de Location:</h4>
-                            <p style="margin-left: 10px;"><strong>Date de départ :</strong> ${debut} &nbsp;&nbsp;&nbsp; <strong>Date de retour :</strong> ${fin}</p>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 10px;">2- Matériels loués :</h4>
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="border-bottom: 2px solid #000;">
-                                        <th style="padding: 8px; text-align: left;">Articles</th>
-                                        <th style="padding: 8px; text-align: center;">Qté</th>
-                                        <th style="padding: 8px; text-align: right;">Prix Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${panier.map(a => `
-                                        <tr style="border-bottom: 1px solid #eee;">
-                                            <td style="padding: 8px;">${a.nom}</td>
-                                            <td style="padding: 8px; text-align: center;">${a.qty}</td>
-                                            <td style="padding: 8px; text-align: right;">${(a.qty * a.prix).toFixed(2)} €</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div style="margin-bottom: 20px; border: 1px solid #000; padding: 10px;">
-                            <h4 style="margin: 0 0 5px 0;">3- Montant à régler/Caution:</h4>
-                            <p style="margin: 3px 0;"><strong>Montant Total à régler :</strong> ${totalP}</p>
-                            <p style="margin: 3px 0;"><strong>Montant chèque de caution :</strong> ${totalC}</p>
-                        </div>
-
-                        <div style="margin-bottom: 20px; font-size: 10px;">
-                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px; font-size: 12px;">Conditions:</h4>
-                            <p style="margin: 0;">• La caution ne sera pas encaissée sauf en cas de détérioration ou non-restitution[cite: 2].</p>
-                            <p style="margin: 0;">• Le matériel devra être restitué propre et en bon état[cite: 2].</p>
-                        </div>
-                    </div>
-                `;
-
-                // 3. Génération du PDF pour le client
-                const options = {
-                    margin: 10,
-                    filename: `Contrat_${nom.replace(/ /g, '_')}.pdf`,
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                await html2pdf().set(options).from(element).save();
-
-                // 4. Envoi du mail avec le contenu HTML[cite: 2]
-                await emailjs.send('service_63g35od', 'template_gb5d2wt', {
-                    nom_loueur: nom,
-                    email_destinataire: email,
-                    message_html: element.innerHTML
-                });
-
-                // 5. Affichage du succès
-                document.getElementById('inventory').innerHTML = `
-                    <div class="col-span-full bg-white p-10 rounded-2xl shadow-xl text-center">
-                        <div class="text-green-500 text-5xl mb-4">✅</div>
-                        <h2 class="text-2xl font-bold">Réservation validée !</h2>
-                        <p class="text-gray-500 mb-6">Le contrat a été téléchargé et un e-mail de récapitulatif vous a été envoyé.</p>
-                        <button onclick="window.location.reload()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Nouvelle réservation</button>
-                    </div>`;
-                panier = []; majPanier();
-
-            } catch (err) {
-                alert("Erreur : " + err.message);
-                btn.disabled = false;
-                btn.innerText = "Confirmer la réservation";
-            }
+        console.log("2. Génération du PDF...");
+        const options = {
+            margin: 10,
+            filename: `Contrat_${nom.replace(/ /g, '_')}.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
+        await html2pdf().set(options).from(element).save();
+        console.log("✅ PDF OK");
 
+        console.log("3. Envoi du mail via EmailJS...");
+        // C'est ici que ça risque de coincer
+        const emailResponse = await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+            nom_loueur: nom,
+            email_destinataire: email,
+            message_html: element.innerHTML
+        });
+        
+        console.log("✅ EmailJS OK !", emailResponse.status, emailResponse.text);
+
+        // Succès final
+        document.getElementById('inventory').innerHTML = `
+            <div class="col-span-full bg-white p-10 rounded-2xl shadow-xl text-center">
+                <div class="text-green-500 text-5xl mb-4">✅</div>
+                <h2 class="text-2xl font-bold">Réservation validée !</h2>
+                <p class="text-gray-500 mb-6">Le contrat a été téléchargé et un e-mail a été envoyé à ${email}.</p>
+                <button onclick="window.location.reload()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Nouvelle réservation</button>
+            </div>`;
+        panier = []; majPanier();
+
+    } catch (err) {
+        console.error("❌ ERREUR DÉTAILLÉE :", err);
+        alert("Erreur lors de la confirmation : " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Confirmer la réservation";
+    }
+};
+   
         fetchMateriels();
     </script>
 </body>
