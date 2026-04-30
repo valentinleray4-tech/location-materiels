@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Initialisation EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">(function(){ emailjs.init("nOykns8pFjxSLoS1s"); })();</script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
@@ -52,31 +55,31 @@
                 </div>
 
                 <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-    <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
-        <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
-    </h3>
-    <div class="grid grid-cols-1 gap-3">
-        <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none">
-        
-        <div class="grid grid-cols-2 gap-2">
-            <input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-            <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-        </div>
-        
-        <div class="grid grid-cols-2 gap-2">
-            <div class="flex flex-col">
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Début</label>
-                <input type="date" id="date_debut" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div class="flex flex-col">
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fin</label>
-                <input type="date" id="date_fin" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-        </div>
-    </div>
-</div>
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
+                        <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
+                    </h3>
+                    <div class="grid grid-cols-1 gap-3">
+                        <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none">
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Début</label>
+                                <input type="date" id="date_debut" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fin</label>
+                                <input type="date" id="date_fin" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <button onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
+                <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
                     Confirmer la réservation
                 </button>
             </div>
@@ -131,38 +134,26 @@
             `).join('');
         }
 
-       window.ajouterAuPanier = (id) => {
-    const item = itemsData.find(i => i.id === id);
-    const qtyInput = document.getElementById(`qty-${id}`);
-    const qtySouhaitee = parseInt(qtyInput.value);
+        window.ajouterAuPanier = (id) => {
+            const item = itemsData.find(i => i.id === id);
+            const qtyInput = document.getElementById(`qty-${id}`);
+            const qtySouhaitee = parseInt(qtyInput.value);
+            const index = panier.findIndex(p => p.id === id);
+            const qtyDejaDansPanier = index > -1 ? panier[index].qty : 0;
+            const totalApresAjout = qtyDejaDansPanier + qtySouhaitee;
 
-    // 1. On cherche si l'article est déjà dans le panier
-    const index = panier.findIndex(p => p.id === id);
-    const qtyDejaDansPanier = index > -1 ? panier[index].qty : 0;
+            if (totalApresAjout > item.stock_total) {
+                const restePossible = item.stock_total - qtyDejaDansPanier;
+                if (restePossible > 0) alert(`Limite atteinte ! Il ne reste que ${restePossible} article(s) disponible(s).`);
+                else alert(`Désolé, tout le stock est déjà dans votre panier.`);
+                return;
+            }
 
-    // 2. Calcul du total après ajout
-    const totalApresAjout = qtyDejaDansPanier + qtySouhaitee;
-
-    // 3. Vérification par rapport au stock réel de Supabase
-    if (totalApresAjout > item.stock_total) {
-        const restePossible = item.stock_total - qtyDejaDansPanier;
-        if (restePossible > 0) {
-            alert(`Limite atteinte ! Vous avez déjà ${qtyDejaDansPanier} article(s) dans le panier. Vous ne pouvez en ajouter que ${restePossible} de plus.`);
-        } else {
-            alert(`Désolé, tout le stock disponible (${item.stock_total}) est déjà dans votre panier.`);
-        }
-        return; // On arrête l'ajout
-    }
-
-    // 4. Si c'est bon, on ajoute
-    if (index > -1) {
-        panier[index].qty = totalApresAjout;
-    } else {
-        panier.push({ ...item, qty: qtySouhaitee });
-    }
-    
-    majPanier();
-};
+            if (index > -1) panier[index].qty = totalApresAjout;
+            else panier.push({ ...item, qty: qtySouhaitee });
+            
+            majPanier();
+        };
 
         window.supprimerItem = (index) => {
             panier.splice(index, 1);
@@ -191,149 +182,128 @@
             document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
         }
 
-        // --- NOUVELLE FONCTION DE CONFIRMATION ---
-      window.confirmerReservation = async () => {
-    const nom = document.getElementById('nom_loueur').value;
-    const email = document.getElementById('email_loueur').value;
-    const tel = document.getElementById('tel_loueur').value;
-    const debut = document.getElementById('date_debut').value;
-    const fin = document.getElementById('date_fin').value;
-    const totalP = document.getElementById('totalPrix').innerText;
-    const totalC = document.getElementById('totalCaution').innerText;
+        window.confirmerReservation = async () => {
+            const btn = document.getElementById('btnSubmit');
+            const nom = document.getElementById('nom_loueur').value;
+            const email = document.getElementById('email_loueur').value;
+            const tel = document.getElementById('tel_loueur').value;
+            const debut = document.getElementById('date_debut').value;
+            const fin = document.getElementById('date_fin').value;
+            const totalP = document.getElementById('totalPrix').innerText;
+            const totalC = document.getElementById('totalCaution').innerText;
 
-    if (!nom || !debut || !fin || panier.length === 0) {
-        alert("Veuillez remplir le nom, les dates et choisir du matériel.");
-        return;
-    }
+            if (!nom || !email || !debut || !fin || panier.length === 0) {
+                alert("Veuillez remplir tous les champs (Nom, Email, Dates) et choisir du matériel.");
+                return;
+            }
 
-    try {
-        // 1. Envoi à Supabase
-        const { error } = await supabase.from('reservations').insert([{
-            nom_loueur: nom, email: email, telephone: tel,
-            date_debut: debut, date_fin: fin, articles: panier,
-            total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
-        }]);
-        if (error) throw error;
+            btn.disabled = true;
+            btn.innerText = "Traitement en cours...";
 
-        // 2. Construction du PDF selon le nouveau modèle
-        const element = document.createElement('div');
-        element.style.padding = "30px";
-        element.style.fontSize = "12px";
-        element.innerHTML = `
-            <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; line-height: 1.4;">
-                <!-- Titre Principal -->
-                <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-                    CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON
-                </h2>
+            try {
+                // 1. Envoi à Supabase
+                const { error } = await supabase.from('reservations').insert([{
+                    nom_loueur: nom, email: email, telephone: tel,
+                    date_debut: debut, date_fin: fin, articles: panier,
+                    total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
+                }]);
+                if (error) throw error;
 
-                <!-- En-tête Coordonnées -->
-                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-                    <div>
-                        <h3 style="margin: 0;">OGEC SERVICE LOCATION</h3>
-                        <p style="margin: 0;">ECOLE SAINTE ANNE<br>2 Rue du château<br>44390 CASSON<br>location.ecolesteanne@gmail.com</p>
+                // 2. Construction du contenu HTML pour le PDF et le MAIL
+                const element = document.createElement('div');
+                element.style.padding = "30px";
+                element.style.fontSize = "12px";
+                element.innerHTML = `
+                    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; line-height: 1.4;">
+                        <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+                            CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON
+                        </h2>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                            <div>
+                                <h3 style="margin: 0;">OGEC SERVICE LOCATION</h3>
+                                <p style="margin: 0;">ECOLE SAINTE ANNE<br>2 Rue du château<br>44390 CASSON<br>location.ecolesteanne@gmail.com</p>
+                            </div>
+                            <div style="text-align: right; border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 200px;">
+                                <p style="margin: 0;"><strong>${nom}</strong></p>
+                                <p style="margin: 0;">Tél : ${tel}</p>
+                                <p style="margin: 0;">Mail : ${email}</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">1- Date de Location:</h4>
+                            <p style="margin-left: 10px;"><strong>Date de départ :</strong> ${debut} &nbsp;&nbsp;&nbsp; <strong>Date de retour :</strong> ${fin}</p>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 10px;">2- Matériels loués :</h4>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #000;">
+                                        <th style="padding: 8px; text-align: left;">Articles</th>
+                                        <th style="padding: 8px; text-align: center;">Qté</th>
+                                        <th style="padding: 8px; text-align: right;">Prix Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${panier.map(a => `
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 8px;">${a.nom}</td>
+                                            <td style="padding: 8px; text-align: center;">${a.qty}</td>
+                                            <td style="padding: 8px; text-align: right;">${(a.qty * a.prix).toFixed(2)} €</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="margin-bottom: 20px; border: 1px solid #000; padding: 10px;">
+                            <h4 style="margin: 0 0 5px 0;">3- Montant à régler/Caution:</h4>
+                            <p style="margin: 3px 0;"><strong>Montant Total à régler :</strong> ${totalP}</p>
+                            <p style="margin: 3px 0;"><strong>Montant chèque de caution :</strong> ${totalC}</p>
+                        </div>
+
+                        <div style="margin-bottom: 20px; font-size: 10px;">
+                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px; font-size: 12px;">Conditions:</h4>
+                            <p style="margin: 0;">• La caution ne sera pas encaissée sauf en cas de détérioration ou non-restitution[cite: 2].</p>
+                            <p style="margin: 0;">• Le matériel devra être restitué propre et en bon état[cite: 2].</p>
+                        </div>
                     </div>
-                    <div style="text-align: right; border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 200px;">
-                        <p style="margin: 0;"><strong>${nom}</strong></p>
-                        <p style="margin: 0;">Tél : ${tel}</p>
-                        <p style="margin: 0;">Mail : ${email}</p>
-                    </div>
-                </div>
+                `;
 
-                <!-- 1. Date de Location -->
-                <div style="margin-bottom: 20px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">1- Date de Location:</h4>
-                    <p style="margin-left: 10px;"><strong>Date de départ :</strong> ${debut} &nbsp;&nbsp;&nbsp; <strong>Date de retour :</strong> ${fin}</p>
-                </div>
+                // 3. Génération du PDF pour le client
+                const options = {
+                    margin: 10,
+                    filename: `Contrat_${nom.replace(/ /g, '_')}.pdf`,
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                await html2pdf().set(options).from(element).save();
 
-                <!-- 2. Matériels loués -->
-                <div style="margin-bottom: 20px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 10px;">2- Matériels loués :</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #000;">
-                                <th style="padding: 8px; text-align: left;">Articles</th>
-                                <th style="padding: 8px; text-align: center;">Quantités</th>
-                                <th style="padding: 8px; text-align: right;">Prix/unités</th>
-                                <th style="padding: 8px; text-align: right;">Caution/unités</th>
-                                <th style="padding: 8px; text-align: right;">Prix Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${panier.map(a => `
-                                <tr style="border-bottom: 1px solid #eee;">
-                                    <td style="padding: 8px;">${a.nom}</td>
-                                    <td style="padding: 8px; text-align: center;">${a.qty}</td>
-                                    <td style="padding: 8px; text-align: right;">${a.prix.toFixed(2)} €</td>
-                                    <td style="padding: 8px; text-align: right;">${(a.caution_unitaire || 10).toFixed(2)} €</td>
-                                    <td style="padding: 8px; text-align: right;">${(a.qty * a.prix).toFixed(2)} €</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+                // 4. Envoi du mail avec le contenu HTML[cite: 2]
+                await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+                    nom_loueur: nom,
+                    email_destinataire: email,
+                    message_html: element.innerHTML
+                });
 
-                <!-- 3. Montant à régler -->
-                <div style="margin-bottom: 20px; border: 1px solid #000; padding: 10px;">
-                    <h4 style="margin: 0 0 5px 0;">3- Montant à régler/Caution:</h4>
-                    <p style="margin: 3px 0;"><strong>Montant Total à régler :</strong> ${totalP}</p>
-                    <p style="margin: 3px 0;"><strong>Montant chèque de caution :</strong> ${totalC}</p>
-                </div>
+                // 5. Affichage du succès
+                document.getElementById('inventory').innerHTML = `
+                    <div class="col-span-full bg-white p-10 rounded-2xl shadow-xl text-center">
+                        <div class="text-green-500 text-5xl mb-4">✅</div>
+                        <h2 class="text-2xl font-bold">Réservation validée !</h2>
+                        <p class="text-gray-500 mb-6">Le contrat a été téléchargé et un e-mail de récapitulatif vous a été envoyé.</p>
+                        <button onclick="window.location.reload()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Nouvelle réservation</button>
+                    </div>`;
+                panier = []; majPanier();
 
-                <!-- 4. Etat du matériel -->
-                <div style="margin-bottom: 20px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">4- Etat du matériel:</h4>
-                    <div style="border: 1px solid #ccc; height: 50px; padding: 5px; color: #666;">Remarques/observations :</div>
-                </div>
-
-                <!-- 5. Conditions -->
-                <div style="margin-bottom: 20px; font-size: 10px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px; font-size: 12px;">5- Conditions:</h4>
-                    <p style="margin: 0;">• Une caution sera demandée lors de la remise du matériel.</p>
-                    <p style="margin: 0;">• La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.</p>
-                    <p style="margin: 0;">• Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu'à sa restitution.[cite: 2]</p>
-                    <p style="margin: 0;">• Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l'application de retenues sur la caution.[cite: 2]</p>
-                    <p style="margin: 10px 0; font-weight: bold; text-align: center;">CE CONTRAT NE FAIT FOI QU'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L'OGEC[cite: 2]</p>
-                </div>
-
-                <!-- Signatures -->
-                <div style="display: flex; justify-content: space-between; margin-top: 30px;">
-                    <div style="width: 40%; border-top: 1px solid #000; padding-top: 5px;">Signature OGEC :</div>
-                    <div style="width: 40%; border-top: 1px solid #000; padding-top: 5px;">Signature loueur :</div>
-                </div>
-            </div>
-        `;
-
-        const options = {
-            margin: 10,
-            filename: `Contrat_Location_${nom.replace(/ /g, '_')}.pdf`,
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            } catch (err) {
+                alert("Erreur : " + err.message);
+                btn.disabled = false;
+                btn.innerText = "Confirmer la réservation";
+            }
         };
-
-        html2pdf().set(options).from(element).save();
-
-        // Affichage du succès
-        document.getElementById('inventory').innerHTML = `
-            <div class="col-span-full bg-white p-10 rounded-2xl shadow-xl text-center">
-                <div class="text-green-500 text-5xl mb-4">✅</div>
-                <h2 class="text-2xl font-bold">Demande envoyée !</h2>
-                <p class="text-gray-500 mb-6">Le contrat PDF a été généré. L'OGEC vous contactera pour confirmer.</p>
-                <button onclick="window.location.reload()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Fermer</button>
-            </div>`;
-        panier = []; majPanier();
-    } catch (err) {
-        alert("Erreur : " + err.message);
-    }
-}
-
-        function creerLienGoogleCalendar(res) {
-            const dDebut = res.date_debut.replace(/-/g, '');
-            const dFin = res.date_fin.replace(/-/g, '');
-            const titre = encodeURIComponent(`[LOC APE] ${res.nom_loueur}`);
-            const list = res.articles.map(a => `- ${a.qty}x ${a.nom}`).join('\n');
-            const desc = encodeURIComponent(`Loueur : ${res.nom_loueur}\nMatériel :\n${list}`);
-            return `https://www.google.com/calendar/render?action=TEMPLATE&text=${titre}&dates=${dDebut}/${dFin}&details=${desc}&sf=true&output=xml`;
-        }
 
         fetchMateriels();
     </script>
