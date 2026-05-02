@@ -84,153 +84,194 @@
         </aside>
     </main>
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+   <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZmt6bGdxcnl4aGphb3ZpZHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzUzNzAsImV4cCI6MjA5MzA1MTM3MH0.PO7vsGf8IfgnhRvegxfrCMDrYU5qhcBW8C789RCq0i8'
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+    const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZmt6bGdxcnl4aGphb3ZpZHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzUzNzAsImV4cCI6MjA5MzA1MTM3MH0.PO7vsGf8IfgnhRvegxfrCMDrYU5qhcBW8C789RCq0i8'
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-        // INITIALISATION EMAILJS (Public Key)
-        emailjs.init("nOykns8pFjxSLoS1s"); // <--- REMPLACE PAR TA CLE PUBLIQUE EMAILJS
+    // INITIALISATION EMAILJS - REMPLACE PAR TA CLÉ PUBLIQUE (obligatoire pour corriger l'erreur 400)
+    emailjs.init("TON_ID_PUBLIC_ICI"); 
 
-        let panier = [];
-        let itemsData = [];
+    let panier = [];
+    let itemsData = [];
 
-        async function fetchMateriels() {
-            try {
-                const { data, error } = await supabase.from('materiels').select('*');
-                if (error) throw error;
-                itemsData = data;
-                renderInventory();
-                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
-            } catch (err) {
-                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
-            }
+    async function fetchMateriels() {
+        try {
+            const { data, error } = await supabase.from('materiels').select('*');
+            if (error) throw error;
+            itemsData = data;
+            renderInventory();
+            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
+        } catch (err) {
+            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
         }
+    }
 
-        function renderInventory() {
-            const container = document.getElementById('inventory');
-            container.innerHTML = itemsData.map(item => `
-                <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
-                    <div class="h-40 bg-gray-100 relative">
-                        <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                        <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
+    function renderInventory() {
+        const container = document.getElementById('inventory');
+        container.innerHTML = itemsData.map(item => `
+            <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
+                <div class="h-40 bg-gray-100 relative">
+                    <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                    <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
+                </div>
+                <div class="p-4 flex flex-col justify-between flex-grow">
+                    <div>
+                        <h3 class="font-bold text-gray-800">${item.nom}</h3>
+                        <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
                     </div>
-                    <div class="p-4 flex flex-col justify-between flex-grow">
-                        <div>
-                            <h3 class="font-bold text-gray-800">${item.nom}</h3>
-                            <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm">
-                            <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
-                        </div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm">
+                        <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
                     </div>
                 </div>
-            `).join('');
-        }
+            </div>
+        `).join('');
+    }
 
-        window.ajouterAuPanier = (id) => {
-            const item = itemsData.find(i => i.id === id);
-            const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            const index = panier.findIndex(p => p.id === id);
-            if (index > -1) panier[index].qty += qty;
-            else panier.push({ ...item, qty: qty });
-            majPanier();
+    window.ajouterAuPanier = (id) => {
+        const item = itemsData.find(i => i.id === id);
+        const qty = parseInt(document.getElementById(`qty-${id}`).value);
+        const index = panier.findIndex(p => p.id === id);
+        if (index > -1) panier[index].qty += qty;
+        else panier.push({ ...item, qty: qty });
+        majPanier();
+    };
+
+    window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
+
+    function majPanier() {
+        const container = document.getElementById('panierList');
+        let totalP = 0, totalC = 0;
+        container.innerHTML = panier.map((item, index) => {
+            totalP += (item.qty * item.prix);
+            totalC += (item.qty * (item.caution_unitaire || 0));
+            return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
+                <span>${item.qty}x ${item.nom}</span>
+                <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
+            </div>`;
+        }).join('');
+        document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
+        document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
+    }
+
+    window.confirmerReservation = async () => {
+        const btn = document.getElementById('btnSubmit');
+        const info = {
+            nom: document.getElementById('nom_loueur').value,
+            email: document.getElementById('email_loueur').value,
+            tel: document.getElementById('tel_loueur').value,
+            debut: document.getElementById('date_debut').value,
+            fin: document.getElementById('date_fin').value,
+            totalP: document.getElementById('totalPrix').innerText,
+            totalC: document.getElementById('totalCaution').innerText
         };
 
-        window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
+        if (!info.nom || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations.");
 
-        function majPanier() {
-            const container = document.getElementById('panierList');
-            let totalP = 0, totalC = 0;
-            container.innerHTML = panier.map((item, index) => {
-                totalP += (item.qty * item.prix);
-                totalC += (item.qty * (item.caution_unitaire || 0));
-                return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
-                    <span>${item.qty}x ${item.nom}</span>
-                    <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
-                </div>`;
-            }).join('');
-            document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
-            document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
-        }
+        btn.disabled = true;
+        btn.innerText = "Traitement en cours...";
 
-        window.confirmerReservation = async () => {
-            const btn = document.getElementById('btnSubmit');
-            const info = {
-                nom: document.getElementById('nom_loueur').value,
-                email: document.getElementById('email_loueur').value,
-                tel: document.getElementById('tel_loueur').value,
-                debut: document.getElementById('date_debut').value,
-                fin: document.getElementById('date_fin').value,
-                totalP: document.getElementById('totalPrix').innerText,
-                totalC: document.getElementById('totalCaution').innerText
-            };
-
-            if (!info.nom || !info.email || panier.length === 0) return alert("Infos manquantes");
-
-            btn.disabled = true;
-            btn.innerText = "Traitement...";
-
-            const docDefinition = {
-                content: [
-                    { text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', style: 'header' },
-                    { text: '\n' },
-                    {
-                        columns: [
-                            { stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON'], fontSize: 9 },
-                            { stack: [info.nom, `Tél: ${info.tel}`, `Mail: ${info.email}`], alignment: 'right', fontSize: 9 }
+        const docDefinition = {
+            pageSize: 'A4',
+            pageMargins: [40, 40, 40, 40],
+            content: [
+                { text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', style: 'mainTitle' },
+                { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] },
+                { text: '\n' },
+                {
+                    columns: [
+                        { width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'location.ecolesteanne@gmail.com'], fontSize: 9 },
+                        { width: 200, stack: [{ text: info.nom, bold: true }, `Tél : ${info.tel}`, `Mail : ${info.email}`], alignment: 'right', fontSize: 9 }
+                    ]
+                },
+                { text: '\n1- Date de Location:', style: 'sectionHeader' },
+                { text: `Date de départ : ${info.debut}       Date de retour : ${info.fin}`, margin: [10, 5, 0, 15], fontSize: 10 },
+                { text: '2- Matériels loués :', style: 'sectionHeader' },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['*', 'auto', 'auto', 'auto'],
+                        body: [
+                            [{text:'Articles', style:'tableHeader'}, {text:'Quantités', style:'tableHeader', alignment:'center'}, {text:'Caution/u', style:'tableHeader', alignment:'right'}, {text:'Prix Total', style:'tableHeader', alignment:'right'}],
+                            ...panier.map(i => [i.nom, i.qty.toString(), `${(i.caution_unitaire || 0).toFixed(2)} €`, `${(i.qty * i.prix).toFixed(2)} €`])
                         ]
-                    },
-                    { text: '\n1- Date de Location:', style: 'section' },
-                    { text: `Départ: ${info.debut}   Retour: ${info.fin}`, fontSize: 10 },
-                    { text: '\n2- Matériels loués :', style: 'section' },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: ['*', 'auto', 'auto', 'auto'],
-                            body: [
-                                ['Article', 'Qté', 'Caution/u', 'Total'],
-                                ...panier.map(i => [i.nom, i.qty, `${i.caution_unitaire}€`, `${(i.qty * i.prix).toFixed(2)}€`])
-                            ]
-                        }, layout: 'lightHorizontalLines'
-                    },
-                    { text: `\nTotal à régler : ${info.totalP}`, bold: true },
-                    { text: `Total caution : ${info.totalC}`, bold: true, color: 'red' },
-                    { text: '\n5- Conditions:', style: 'section' },
-                    { text: 'La caution ne sera pas encaissée sauf dégradation. Le matériel doit être rendu propre.', fontSize: 8 },
-                    { text: '\n\nSignatures :', margin: [0, 20] },
-                    { columns: [{ text: 'OGEC' }, { text: 'Le Loueur', alignment: 'right' }] }
-                ],
-                styles: {
-                    header: { fontSize: 14, bold: true, alignment: 'center' },
-                    section: { fontSize: 11, bold: true, background: '#eeeeee', margin: [0, 10, 0, 5] }
+                    }, layout: 'lightHorizontalLines'
+                },
+                { text: '\n' },
+                {
+                    table: {
+                        widths: ['*'],
+                        body: [[{
+                            stack: [
+                                { text: '3- Montant à régler/Caution:', bold: true, fontSize: 10 },
+                                { text: `Montant Total à régler : ${info.totalP}`, margin: [0, 5, 0, 0] },
+                                { text: `Montant chèque de caution : ${info.totalC}`, bold: true }
+                            ], padding: [10, 10, 10, 10]
+                        }]]
+                    }
+                },
+                { text: '\n4- Etat du matériel:', style: 'sectionHeader' },
+                { text: 'Remarques/observations :', fontSize: 9, color: '#666' },
+                { canvas: [{ type: 'rect', x: 0, y: 5, w: 515, h: 40, lineWidth: 0.5, lineColor: '#ccc' }] },
+                { text: '\n5- Conditions:', style: 'sectionHeader' },
+                {
+                    ul: [
+                        { text: 'Une caution sera demandée lors de la remise du matériel.', fontSize: 8 },
+                        { text: 'La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.', fontSize: 8 },
+                        { text: 'Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu\'à sa restitution.', fontSize: 8 },
+                        { text: 'Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l\'application de retenues sur la caution.', fontSize: 8 }
+                    ], margin: [0, 5, 0, 10]
+                },
+                { text: 'CE CONTRAT NE FAIT FOI QU\'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L\'OGEC', alignment: 'center', bold: true, fontSize: 10, margin: [0, 15, 0, 20] },
+                {
+                    columns: [
+                        { stack: [{ text: 'Signature OGEC :', decoration: 'underline', fontSize: 10 }, { text: '\n\n' }] },
+                        { stack: [{ text: 'Signature loueur :', decoration: 'underline', fontSize: 10, alignment: 'right' }, { text: '\n\n' }] }
+                    ]
                 }
-            };
+            ],
+            styles: {
+                mainTitle: { fontSize: 14, bold: true, alignment: 'center' },
+                sectionHeader: { fontSize: 11, bold: true, background: '#e5e7eb', margin: [0, 15, 0, 5] },
+                tableHeader: { fontSize: 9, bold: true, fillColor: '#f3f4f6' }
+            }
+        };
 
-            try {
-                const pdfDoc = pdfMake.createPdf(docDefinition);
-                pdfDoc.download(`Contrat_${info.nom}.pdf`);
+        try {
+            const pdfDocGenerator = pdfMake.createPdf(docDefinition);
 
-                // Envoi EmailJS
+            // GESTION STORAGE SUPABASE
+            pdfDocGenerator.getBlob(async (blob) => {
+                const fileName = `contrat_${Date.now()}_${info.nom.replace(/\s/g, '_')}.pdf`;
+                
+                const { data, error: uploadError } = await supabase.storage
+                    .from('contrats')
+                    .upload(fileName, blob, { contentType: 'application/pdf' });
+
+                if (uploadError) throw uploadError;
+
+                // ENVOI EMAILJS (Variables de image_965f99.png)[cite: 1]
                 await emailjs.send('service_63g35od', 'template_gb5d2wt', {
                     nom_loueur: info.nom,
                     email_destinataire: info.email,
-                    message_html: `Réservation de ${info.nom}. Total: ${info.totalP}. Caution: ${info.totalC}`
+                    message_html: `Nouvelle réservation de ${info.nom}. <br>Total à régler : ${info.totalP} <br>Caution : ${info.totalC}`
                 });
 
-                alert("Réservation réussie !");
+                pdfDocGenerator.download(fileName);
+                alert("Réservation réussie ! Le contrat est téléchargé et l'école a été notifiée.");
                 window.location.reload();
-            } catch (err) {
-                console.error(err);
-                alert("Erreur lors de l'envoi");
-                btn.disabled = false;
-            }
-        };
+            });
 
-        fetchMateriels();
-    </script>
-</body>
+        } catch (err) {
+            console.error(err);
+            alert("Une erreur est survenue lors de l'envoi.");
+            btn.disabled = false;
+        }
+    };
+
+    fetchMateriels();
+</script>
 </html>
