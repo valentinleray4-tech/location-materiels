@@ -244,37 +244,55 @@
         try {
             const pdfDocGenerator = pdfMake.createPdf(docDefinition);
 
-            pdfDocGenerator.getBlob(async (blob) => {
-                const fileName = `contrat_${Date.now()}_${info.nom.replace(/\s/g, '_')}.pdf`;
-                
-                // 1. Upload Supabase Storage
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('contrats')
-                    .upload(fileName, blob, { contentType: 'application/pdf' });
+            // ... (reste du code identique au-dessus)
 
-                if (uploadError) throw uploadError;
+pdfDocGenerator.getBlob(async (blob) => {
+    const fileName = `contrat_${Date.now()}_${info.nom.replace(/\s/g, '_')}.pdf`;
+    
+    // 1. UPLOAD DANS LE STORAGE
+    const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('contrats')
+        .upload(fileName, blob, { contentType: 'application/pdf' });
 
-                // 2. Envoi EmailJS (Variables de image_965f99.png)[cite: 1]
-                await emailjs.send('service_63g35od', 'template_gb5d2wt', {
-                    nom_loueur: info.nom,
-                    email_destinataire: info.email,
-                    message_html: `Nouvelle réservation de ${info.nom}. <br>Total : ${info.totalP} <br>Caution : ${info.totalC}`
-                });
+    if (uploadError) throw uploadError;
 
-                // 3. Téléchargement final
-                pdfDocGenerator.download(fileName);
-                alert("Réservation réussie ! Le contrat est enregistré et l'email envoyé.");
-                window.location.reload();
-            });
+    // 2. RÉCUPÉRATION DU LIEN PUBLIC
+    const { data: urlData } = supabase.storage
+        .from('contrats')
+        .getPublicUrl(fileName);
+    
+    const publicUrl = urlData.publicUrl;
 
-        } catch (err) {
-            console.error("Erreur détaillée:", err);
-            alert("Erreur technique. Vérifie que le bucket 'contrats' existe dans Supabase et que ta clé EmailJS est correcte.");
-            btn.disabled = false;
-            btn.innerText = "Réessayer la réservation";
-        }
-    };
+    // 3. --- NOUVEAU : ENREGISTREMENT DANS LA TABLE RESERVATIONS ---
+    const { error: dbError } = await supabase
+        .from('reservations')
+        .insert([{
+            nom_loueur: info.nom,
+            email_loueur: info.email,
+            tel_loueur: info.tel,
+            date_debut: info.debut,
+            date_fin: info.fin,
+            total_prix: parseFloat(info.totalP),
+            total_caution: parseFloat(info.totalC),
+            pdf_url: publicUrl, // Ton lien est enregistré ici
+            statut: 'En attente'
+        }]);
 
-    fetchMateriels();
-</script>
-</html>
+    if (dbError) {
+        console.error("Erreur base de données:", dbError);
+        // On continue quand même pour le mail, mais on prévient dans la console
+    }
+
+    // 4. ENVOI EMAILJS (Template image_965f99.png)
+    await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+        nom_loueur: info.nom,
+        email_destinataire: info.email,
+        message_html: `Nouvelle réservation de ${info.nom}.<br>
+                       Total : ${info.totalP} | Caution : ${info.totalC}<br><br>
+                       Lien du contrat : <a href="${publicUrl}" target="_blank">Cliquez ici pour voir le PDF</a>`
+    });
+
+    pdfDocGenerator.download(fileName);
+    alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
+    window.location.reload();
+});
