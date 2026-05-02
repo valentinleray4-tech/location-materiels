@@ -296,6 +296,13 @@ pdfDocGenerator.getBlob(async (blob) => {
     alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
     window.location.reload();
 });
+} catch (err) {
+        console.error(err);
+        alert("Erreur lors de la réservation.");
+        btn.disabled = false;
+        btn.innerText = "Confirmer la réservation";
+    }
+};
 
 fetchMateriels();
 </script>
