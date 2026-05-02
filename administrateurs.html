@@ -26,8 +26,8 @@
 // ==========================================
     // INSEREZ LE BLOC ICI (JUSTE APRÈS ADMIN_CODE)
     // ==========================================
-    window.modifierStatut = async (id, nouveauStatut) => {
-    // On appelle identifierAdmin pour s'assurer qu'on a le nom de la personne
+   window.modifierStatut = async (id, nouveauStatut) => {
+    // 1. Identification de l'admin
     const adminQuiValide = identifierAdmin(); 
     
     if (!adminQuiValide) {
@@ -35,6 +35,7 @@
         return;
     }
 
+    // 2. Mise à jour dans Supabase
     const { error } = await supabase
         .from('reservations')
         .update({ 
@@ -46,8 +47,29 @@
     if (error) {
         alert("Erreur Supabase : " + error.message);
     } else {
-        // Optionnel : un petit message de confirmation
-        console.log("Statut mis à jour !");
+        console.log("Statut mis à jour dans Supabase !");
+
+        // 3. ENVOI À ZAPIER (Uniquement si on valide la réservation)
+        if (nouveauStatut === 'Confirmé') {
+            // On récupère les données complètes pour les envoyer à Zapier
+            const { data: res } = await supabase
+                .from('reservations')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            // REMPLACEZ L'URL CI-DESSOUS PAR VOTRE "WEBHOOK URL" DE ZAPIER
+            fetch('https://hooks.zapier.com/hooks/catch/27445360/uve1kvh/', {
+                method: 'POST',
+                mode: 'no-cors', // Évite les blocages de sécurité navigateurs
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(res)
+            });
+            
+            alert("Réservation validée ! Le mail de confirmation et le calendrier Google sont en cours de synchronisation.");
+        } else {
+            alert("La réservation a été marquée comme refusée.");
+        }
         init(); // Recharge la liste et le calendrier
     }
 };
