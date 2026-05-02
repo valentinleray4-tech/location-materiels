@@ -116,10 +116,35 @@ async function fetchMateriels() {
 document.getElementById('date_debut').addEventListener('change', renderInventory);
 document.getElementById('date_fin').addEventListener('change', renderInventory);
     
+ async function calculerStockDisponible(materielId, stockTotal) {
+    const debut = document.getElementById('date_debut').value;
+    const fin = document.getElementById('date_fin').value;
+
+    if (!debut || !fin) return stockTotal;
+
+    // On récupère les réservations qui chevauchent ces dates
+    const { data: reservations, error } = await supabase
+        .from('reservations')
+        .select('articles')
+        .lte('date_debut', fin)
+        .gte('date_fin', debut);
+
+    if (error) {
+        console.error("Erreur calcul stock:", error);
+        return stockTotal;
+    }
+
+    // Calcul de la somme déjà réservée
+    let dejaLoue = 0;
+    reservations.forEach(res => {
+        const art = res.articles.find(a => a.id === materielId);
+        if (art) dejaLoue += art.qty;
+    });
+
+    return stockTotal - dejaLoue;
+}   
 function renderInventory() {
     const container = document.getElementById('inventory');
-    
-    // On vérifie si les deux dates sont saisies
     const dateDebut = document.getElementById('date_debut').value;
     const dateFin = document.getElementById('date_fin').value;
     const datesRemplies = dateDebut !== "" && dateFin !== "";
@@ -128,7 +153,10 @@ function renderInventory() {
         <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
             <div class="h-40 bg-gray-100 relative">
                 <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
+                <!-- LE BADGE DYNAMIQUE ICI -->
+                <span class="absolute top-2 right-2 ${datesRemplies ? 'bg-blue-600' : 'bg-green-500'} text-white text-[10px] px-2 py-1 rounded font-bold uppercase">
+                    ${datesRemplies ? '<i class="fas fa-calendar-check mr-1"></i> Dispo vérifiée' : 'Stock total : ' + item.stock_total}
+                </span>
             </div>
             <div class="p-4 flex flex-col justify-between flex-grow">
                 <div>
@@ -151,13 +179,29 @@ function renderInventory() {
     `).join('');
 }
 
-window.ajouterAuPanier = (id) => {
-const item = itemsData.find(i => i.id === id);
-const qty = parseInt(document.getElementById(`qty-${id}`).value);
-const index = panier.findIndex(p => p.id === id);
-if (index > -1) panier[index].qty += qty;
-else panier.push({ ...item, qty: qty });
-majPanier();
+window.ajouterAuPanier = async (id) => {
+    const item = itemsData.find(i => i.id === id);
+    const qtyDemandee = parseInt(document.getElementById(`qty-${id}`).value);
+    
+    // VERIFICATION DYNAMIQUE AVANT AJOUT
+    const stockReel = await calculerStockDisponible(id, item.stock_total);
+
+    if (qtyDemandee > stockReel) {
+        alert(`Désolé ! Pour ces dates, il ne reste que ${stockReel} exemplaire(s) de "${item.nom}".`);
+        return;
+    }
+
+    const index = panier.findIndex(p => p.id === id);
+    if (index > -1) {
+        if (panier[index].qty + qtyDemandee > stockReel) {
+            alert("Limite de stock atteinte pour cette période avec vos articles déjà au panier.");
+            return;
+        }
+        panier[index].qty += qtyDemandee;
+    } else {
+        panier.push({ ...item, qty: qtyDemandee });
+    }
+    majPanier();
 };
 
 window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
