@@ -1,56 +1,140 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Admin - Réservations</title>
+    <meta charset="UTF-8">
+    <title>Admin - Réservations & Calendrier</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    <!-- Tailwind pour le style -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-const supabase = createClient(
-    'https://uofkzlgqryxhjaovidqf.supabase.co',
-    'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
-);
+    <style>
+        /* Ajustement pour que le calendrier ne soit pas trop géant */
+        #calendar {
+            max-height: 700px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .fc-event { cursor: pointer; }
+    </style>
 
-async function loadReservations() {
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const { data } = await supabase
-        .from('reservations')
-        .select('*')
-        .order('date_debut', { ascending: true });
+        const supabase = createClient(
+            'https://uofkzlgqryxhjaovidqf.supabase.co',
+            'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
+        );
 
-    const container = document.getElementById('list');
+        async function init() {
+            const { data: reservations, error } = await supabase
+                .from('reservations')
+                .select('*')
+                .order('date_debut', { ascending: true });
 
-    container.innerHTML = data.map(r => `
-        <div class="bg-white p-4 rounded shadow">
-            <div class="flex justify-between">
-                <strong>${r.nom_loueur}</strong>
-                <span>${r.date_debut} → ${r.date_fin}</span>
-            </div>
+            if (error) {
+                console.error("Erreur Supabase:", error);
+                return;
+            }
 
-            <div class="text-sm text-gray-600 mt-2">
-                ${r.articles.map(a => `${a.qty}x ${a.nom}`).join('<br>')}
-            </div>
+            renderList(reservations);
+            renderCalendar(reservations);
+        }
 
-            <div class="mt-2 font-bold text-indigo-600">
-                ${r.total_prix} €
-            </div>
-        </div>
-    `).join('');
-}
+        // 1. Affichage de la liste classique
+        function renderList(data) {
+            const container = document.getElementById('list');
+            container.innerHTML = data.map(r => `
+                <div class="bg-white p-4 rounded shadow border-l-4 border-indigo-500">
+                    <div class="flex justify-between items-center">
+                        <strong class="text-lg">${r.nom_loueur}</strong>
+                        <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                            ${r.date_debut} → ${r.date_fin}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        ${r.articles.map(a => `<span class="inline-block bg-gray-100 rounded px-2 py-1 m-1">${a.qty}x ${a.nom}</span>`).join('')}
+                    </div>
+                    <div class="mt-2 font-bold text-indigo-600">${r.total_prix} €</div>
+                </div>
+            `).join('');
+        }
 
-window.onload = loadReservations;
-</script>
+        // 2. Affichage du Calendrier
+        function renderCalendar(data) {
+            const calendarEl = document.getElementById('calendar');
+            
+            // On transforme les données Supabase au format FullCalendar
+            const events = data.map(r => ({
+                title: `${r.nom_loueur} (${r.total_prix}€)`,
+                start: r.date_debut,
+                end: r.date_fin, // Note: FullCalendar exclut le jour de fin, vérifiez si vous devez ajouter +1 jour
+                extendedProps: {
+                    articles: r.articles.map(a => `${a.qty}x ${a.nom}`).join(', ')
+                },
+                backgroundColor: '#4f46e5',
+                borderColor: '#4338ca'
+            }));
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'fr',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                buttonText: {
+                    today: "Aujourd'hui",
+                    month: "Mois",
+                    week: "Semaine"
+                },
+                events: events,
+                eventClick: function(info) {
+                    alert('Client: ' + info.event.title + '\nMatériel: ' + info.event.extendedProps.articles);
+                }
+            });
+
+            calendar.render();
+        }
+
+        window.onload = init;
+    </script>
 </head>
 
 <body class="bg-gray-100 p-6">
 
-<h1 class="text-2xl font-bold mb-6">📊 Réservations</h1>
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-extrabold mb-8 text-gray-800 border-b pb-4">📊 Tableau de Bord Réservations</h1>
 
-<div id="list" class="space-y-4"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Colonne Calendrier (Large) -->
+            <div class="lg:col-span-2">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <span class="mr-2">📅</span> Calendrier des locations
+                </h2>
+                <div id="calendar"></div>
+            </div>
+
+            <!-- Colonne Liste (Étroite) -->
+            <div class="lg:col-span-1">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <span class="mr-2">📋</span> Dernières entrées
+                </h2>
+                <div id="list" class="space-y-4 overflow-y-auto" style="max-height: 700px;">
+                    <!-- Les réservations s'affichent ici -->
+                </div>
+            </div>
+
+        </div>
+    </div>
 
 </body>
 </html>
-```
