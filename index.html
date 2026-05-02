@@ -280,6 +280,8 @@ pdfDocGenerator.getBlob(async (blob) => {
 
     if (dbError) {
         console.error("Erreur base de données:", dbError);
+        alert("Erreur base de données : " + dbError.message); // <--- AJOUTE CECI
+    }
         // On continue quand même pour le mail, mais on prévient dans la console
     }
 
