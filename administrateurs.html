@@ -105,9 +105,12 @@
                             </span>
                         </div>
                         
-                        <div class="text-sm text-gray-600 mt-3 space-y-1 bg-gray-50 p-2 rounded">
-                            ${r.articles.map(a => `<div class="flex justify-between"><span>${a.qty}x ${a.nom}</span></div>`).join('')}
-                        </div>
+                       <div class="text-sm text-gray-600 mt-3 space-y-1 bg-gray-50 p-2 rounded">
+    ${r.articles ? 
+        r.articles.map(a => `<div class="flex justify-between"><span>${a.qty}x ${a.nom}</span></div>`).join('') 
+        : '<span class="text-red-400 italic text-xs">Aucun article enregistré</span>'
+    }
+</div>
 
                         <div class="mt-4 pt-3 border-t flex flex-col gap-3">
                             <div class="flex justify-between items-center">
