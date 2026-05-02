@@ -350,43 +350,72 @@
     }
 };
     try {
-        // 1. Déclenche le téléchargement du PDF immédiatement
-        pdfMake.createPdf(docDefinition).download(`Contrat_${nom.replace(/ /g, '_')}.pdf`);
-        console.log("PDF envoyé au téléchargement");
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
 
-        // 2. Envoi à Supabase
-        await supabase.from('reservations').insert([{
-            nom_loueur: nom, email: email, telephone: tel,
-            date_debut: debut, date_fin: fin, articles: panier,
-            total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
+    // --- ÉTAPE 1 : Téléchargement pour impression immédiate ---
+    pdfDocGenerator.download(`Contrat_${nom.replace(/ /g, '_')}.pdf`);
+    console.log("PDF envoyé au téléchargement");
+
+    // --- ÉTAPE 2 : Conversion en BLOB pour Supabase ---
+    // Cette opération est sûre et ne bloque pas le rendu
+    pdfDocGenerator.getBlob(async (blob) => {
+        const fileName = `contrat_${Date.now()}_${nom.replace(/ /g, '_')}.pdf`;
+
+        // Envoi du fichier réel dans le Storage
+        const { data: storageData, error: storageError } = await supabase
+            .storage
+            .from('contrats')
+            .upload(fileName, blob, {
+                contentType: 'application/pdf',
+                upsert: true
+            });
+
+        if (storageError) {
+            console.error("Erreur Storage:", storageError);
+        } else {
+            console.log("Fichier PDF stocké avec succès dans Supabase Storage");
+        }
+
+        // --- ÉTAPE 3 : Enregistrement en base de données ---
+        // On récupère l'URL publique du fichier pour la mettre dans la table
+        const { data: urlData } = supabase.storage.from('contrats').getPublicUrl(fileName);
+
+        const { error: sbError } = await supabase.from('reservations').insert([{
+            nom_loueur: nom,
+            email: email,
+            telephone: tel,
+            date_debut: debut,
+            date_fin: fin,
+            articles: panier,
+            total_prix: parseFloat(totalP),
+            total_caution: parseFloat(totalC),
+            pdf_url: urlData.publicUrl // On stocke le lien direct vers le fichier !
         }]);
 
-        // 3. Envoi du mail (on utilise une version texte/html simple pour EmailJS)
-        const listeArticlesMail = panier.map(a => `- ${a.qty}x ${a.nom}`).join('<br>');
-        const messageHtml = `<h3>Récapitulatif de location</h3><p>${listeArticlesMail}</p><p>Total: ${totalP}</p>`;
+        if (sbError) throw sbError;
+    });
 
-        await emailjs.send('service_63g35od', 'template_gb5d2wt', {
-            nom_loueur: nom,
-            email_destinataire: email,
-            message_html: messageHtml
-        });
+    // --- ÉTAPE 4 : Envoi du mail ---
+    const listeArticlesMail = panier.map(a => `- ${a.qty}x ${a.nom}`).join('<br>');
+    await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+        nom_loueur: nom,
+        email_destinataire: email,
+        message_html: `<h3>Récapitulatif de location</h3><p>${listeArticlesMail}</p><p>Total: ${totalP}</p>`
+    });
 
-        // Interface succès
-        document.getElementById('inventory').innerHTML = `
-            <div class="col-span-full text-center p-10 bg-white rounded-xl shadow-lg">
-                <div class="text-green-500 text-6xl mb-4">✔</div>
-                <h2 class="text-2xl font-bold">Réservation confirmée !</h2>
-                <p class="text-gray-500">Le contrat PDF est prêt et un mail a été envoyé.</p>
-                <button onclick="window.location.reload()" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold">Nouvelle réservation</button>
-            </div>`;
+    // Affichage succès
+    document.getElementById('inventory').innerHTML = `
+        <div class="col-span-full text-center p-10 bg-white rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-green-600">Réservation terminée !</h2>
+            <p>Le contrat est en cours de téléchargement pour impression.</p>
+            <p class="text-sm text-gray-500">Une copie est archivée sur Supabase.</p>
+            <button onclick="window.location.reload()" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-lg">Retour</button>
+        </div>`;
 
-    } catch (err) {
-        console.error(err);
-        alert("Erreur lors de la confirmation.");
-        btn.disabled = false;
-        btn.innerText = "Réessayer";
-    }
-};
+} catch (err) {
+    console.error("Erreur globale:", err);
+    alert("Une erreur est survenue lors de l'enregistrement.");
+}
 
         function creerLienGoogleCalendar(res) {
             const dDebut = res.date_debut.replace(/-/g, '');
