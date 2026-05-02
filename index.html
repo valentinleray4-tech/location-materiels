@@ -143,20 +143,36 @@ document.getElementById('date_fin').addEventListener('change', renderInventory);
 
     return stockTotal - dejaLoue;
 }   
-function renderInventory() {
+async function renderInventory() {
     const container = document.getElementById('inventory');
     const dateDebut = document.getElementById('date_debut').value;
     const dateFin = document.getElementById('date_fin').value;
     const datesRemplies = dateDebut !== "" && dateFin !== "";
 
-    container.innerHTML = itemsData.map(item => `
+    // On utilise Promise.all pour calculer tous les stocks en parallèle avant d'afficher
+    const itemsWithStock = await Promise.all(itemsData.map(async (item) => {
+        const stockDispo = datesRemplies 
+            ? await calculerStockDisponible(item.id, item.stock_total) 
+            : item.stock_total;
+        return { ...item, stockDispo };
+    }));
+
+    container.innerHTML = itemsWithStock.map(item => `
         <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
             <div class="h-40 bg-gray-100 relative">
                 <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                <!-- LE BADGE DYNAMIQUE ICI -->
-                <span class="absolute top-2 right-2 ${datesRemplies ? 'bg-blue-600' : 'bg-green-500'} text-white text-[10px] px-2 py-1 rounded font-bold uppercase">
-                    ${datesRemplies ? '<i class="fas fa-calendar-check mr-1"></i> Dispo vérifiée' : 'Stock total : ' + item.stock_total}
-                </span>
+                
+                <!-- Zone des Badges en haut à droite -->
+                <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
+                    <span class="${datesRemplies ? 'bg-blue-600' : 'bg-green-500'} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-sm">
+                        ${datesRemplies ? 'DISPONIBLE : ' + item.stockDispo : 'STOCK TOTAL : ' + item.stock_total}
+                    </span>
+                    ${datesRemplies ? `
+                        <span class="bg-blue-100 text-blue-700 text-[9px] px-2 py-0.5 rounded font-bold uppercase border border-blue-200">
+                            <i class="fas fa-calendar-check"></i> Dispo vérifiée
+                        </span>
+                    ` : ''}
+                </div>
             </div>
             <div class="p-4 flex flex-col justify-between flex-grow">
                 <div>
@@ -164,14 +180,14 @@ function renderInventory() {
                     <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
                 </div>
                 <div class="mt-4 flex gap-2 ${!datesRemplies ? 'opacity-50' : ''}">
-                    <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" 
-                        ${!datesRemplies ? 'disabled' : ''} 
+                    <input type="number" id="qty-${item.id}" min="1" max="${item.stockDispo}" value="1" 
+                        ${!datesRemplies || item.stockDispo <= 0 ? 'disabled' : ''} 
                         class="w-12 border rounded text-center text-sm">
                     
                     <button onclick="ajouterAuPanier(${item.id})" 
-                        ${!datesRemplies ? 'disabled' : ''} 
-                        class="flex-1 ${datesRemplies ? 'bg-indigo-600' : 'bg-gray-400 cursor-not-allowed'} text-white text-xs py-2 rounded font-bold">
-                        ${datesRemplies ? 'Ajouter' : 'Saisir dates'}
+                        ${!datesRemplies || item.stockDispo <= 0 ? 'disabled' : ''} 
+                        class="flex-1 ${datesRemplies && item.stockDispo > 0 ? 'bg-indigo-600' : 'bg-gray-400 cursor-not-allowed'} text-white text-xs py-2 rounded font-bold">
+                        ${!datesRemplies ? 'Saisir dates' : (item.stockDispo > 0 ? 'Ajouter' : 'Épuisé')}
                     </button>
                 </div>
             </div>
