@@ -268,8 +268,8 @@ pdfDocGenerator.getBlob(async (blob) => {
         .from('reservations')
         .insert([{
             nom_loueur: info.nom,
-            email_loueur: info.email,
-            tel_loueur: info.tel,
+            email: info.email,
+            telephone: info.tel,
             date_debut: info.debut,
             date_fin: info.fin,
             total_prix: parseFloat(info.totalP),
