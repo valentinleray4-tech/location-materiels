@@ -192,7 +192,8 @@
         }
 
         // --- NOUVELLE FONCTION DE CONFIRMATION ---
-      window.confirmerReservation = async () => {
+ window.confirmerReservation = async () => {
+    const btn = document.getElementById('btnSubmit');
     const nom = document.getElementById('nom_loueur').value;
     const email = document.getElementById('email_loueur').value;
     const tel = document.getElementById('tel_loueur').value;
@@ -201,130 +202,190 @@
     const totalP = document.getElementById('totalPrix').innerText;
     const totalC = document.getElementById('totalCaution').innerText;
 
-    if (!nom || !debut || !fin || panier.length === 0) {
-        alert("Veuillez remplir le nom, les dates et choisir du matériel.");
-        return;
+    if (!nom || !email || panier.length === 0) {
+        return alert("Veuillez remplir les informations et choisir du matériel.");
     }
 
+    btn.disabled = true;
+    btn.innerText = "Génération du contrat...";
+
+    // --- CONFIGURATION PDFMAKE ---
+    const docDefinition = {
+    pageSize: 'A4',
+    pageMargins: [40, 40, 40, 40],
+    content: [
+        // Titre Principal
+        { 
+            text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', 
+            style: 'mainTitle' 
+        },
+        { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] },
+        { text: '\n' },
+
+        // En-tête Coordonnées
+        {
+            columns: [
+                {
+                    width: '*',
+                    stack: [
+                        { text: 'OGEC SERVICE LOCATION', bold: true },
+                        { text: 'ECOLE SAINTE ANNE\n2 Rue du château\n44390 CASSON\nlocation.ecolesteanne@gmail.com', fontSize: 9 }
+                    ]
+                },
+                {
+                    width: 200,
+                    stack: [
+                        { text: nom, bold: true, alignment: 'right' },
+                        { text: `Tél : ${tel}`, alignment: 'right', fontSize: 9 },
+                        { text: `Mail : ${email}`, alignment: 'right', fontSize: 9 }
+                    ],
+                    margin: [0, 0, 0, 10]
+                }
+            ]
+        },
+
+        // 1- Dates
+        { text: '1- Date de Location:', style: 'sectionHeader' },
+        { 
+            text: `Date de départ : ${debut}       Date de retour : ${fin}`, 
+            margin: [10, 5, 0, 15], 
+            fontSize: 10 
+        },
+
+        // 2- Tableau des matériels (Les 5 colonnes officielles)
+        { text: '2- Matériels loués :', style: 'sectionHeader' },
+        {
+            table: {
+                headerRows: 1,
+                widths: ['*', 'auto', 'auto', 'auto', 'auto'],
+                body: [
+                    [
+                        { text: 'Articles', style: 'tableHeader' },
+                        { text: 'Quantités', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Caution/unités', style: 'tableHeader', alignment: 'right' },
+                        { text: 'Prix/unités', style: 'tableHeader', alignment: 'right' },
+                        { text: 'Prix Total', style: 'tableHeader', alignment: 'right' }
+                    ],
+                    ...panier.map(item => [
+                        { text: item.nom, fontSize: 9 },
+                        { text: item.qty.toString(), alignment: 'center', fontSize: 9 },
+                        { text: `${(item.caution_unitaire || 0).toFixed(2)} €`, alignment: 'right', fontSize: 9 },
+                        { text: `${item.prix.toFixed(2)} €`, alignment: 'right', fontSize: 9 },
+                        { text: `${(item.qty * item.prix).toFixed(2)} €`, alignment: 'right', bold: true, fontSize: 9 }
+                    ])
+                ]
+            },
+            layout: 'lightHorizontalLines'
+        },
+
+        // 3- Totaux
+        { text: '\n' },
+        {
+            table: {
+                widths: ['*'],
+                body: [
+                    [
+                        {
+                            stack: [
+                                { text: '3- Montant à régler/Caution:', bold: true, fontSize: 10 },
+                                { text: `Montant Total à régler : ${totalP}`, margin: [0, 5, 0, 0] },
+                                { text: `Montant chèque de caution : ${totalC}`, bold: true }
+                            ],
+                            padding: [10, 10, 10, 10]
+                        }
+                    ]
+                ]
+            }
+        },
+
+        // 4- État du matériel
+        { text: '\n4- Etat du matériel:', style: 'sectionHeader' },
+        { text: 'Remarques/observations :', fontSize: 9, color: '#666', margin: [0, 5, 0, 0] },
+        { canvas: [{ type: 'rect', x: 0, y: 5, w: 515, h: 40, lineWidth: 0.5, lineColor: '#ccc' }] },
+
+        // 5- Conditions (Texte officiel OGEC)
+        { text: '\n5- Conditions:', style: 'sectionHeader' },
+        {
+            ul: [
+                { text: 'Une caution sera demandée lors de la remise du matériel.', fontSize: 8 },
+                { text: 'La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.', fontSize: 8 },
+                { text: 'Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu\'à sa restitution.', fontSize: 8 },
+                { text: 'Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l\'application de retenues sur la caution.[cite: 2]', fontSize: 8 }
+            ],
+            margin: [0, 5, 0, 10]
+        },
+        { 
+            text: 'CE CONTRAT NE FAIT FOI QU\'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L\'OGEC[cite: 2]', 
+            alignment: 'center', 
+            bold: true, 
+            fontSize: 9, 
+            margin: [0, 10, 0, 20] 
+        },
+
+        // Signatures
+        {
+            columns: [
+                {
+                    width: '*',
+                    stack: [
+                        { text: 'Signature OGEC :', decoration: 'underline', fontSize: 10 },
+                        { text: '\n\n\n' }
+                    ]
+                },
+                {
+                    width: '*',
+                    stack: [
+                        { text: 'Signature loueur :', decoration: 'underline', fontSize: 10, alignment: 'right' },
+                        { text: '\n\n\n' }
+                    ]
+                }
+            ]
+        }
+    ],
+    styles: {
+        mainTitle: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 5] },
+        sectionHeader: { fontSize: 11, bold: true, background: '#e5e7eb', margin: [0, 15, 0, 5] },
+        tableHeader: { fontSize: 9, bold: true, fillColor: '#f3f4f6', margin: [0, 3, 0, 3] }
+    }
+};
     try {
-        // 1. Envoi à Supabase
-        const { error } = await supabase.from('reservations').insert([{
+        // 1. Déclenche le téléchargement du PDF immédiatement
+        pdfMake.createPdf(docDefinition).download(`Contrat_${nom.replace(/ /g, '_')}.pdf`);
+        console.log("PDF envoyé au téléchargement");
+
+        // 2. Envoi à Supabase
+        await supabase.from('reservations').insert([{
             nom_loueur: nom, email: email, telephone: tel,
             date_debut: debut, date_fin: fin, articles: panier,
             total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
         }]);
-        if (error) throw error;
 
-        // 2. Construction du PDF selon le nouveau modèle
-        const element = document.createElement('div');
-        element.style.padding = "30px";
-        element.style.fontSize = "12px";
-        element.innerHTML = `
-            <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; line-height: 1.4;">
-                <!-- Titre Principal -->
-                <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-                    CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON
-                </h2>
+        // 3. Envoi du mail (on utilise une version texte/html simple pour EmailJS)
+        const listeArticlesMail = panier.map(a => `- ${a.qty}x ${a.nom}`).join('<br>');
+        const messageHtml = `<h3>Récapitulatif de location</h3><p>${listeArticlesMail}</p><p>Total: ${totalP}</p>`;
 
-                <!-- En-tête Coordonnées -->
-                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-                    <div>
-                        <h3 style="margin: 0;">OGEC SERVICE LOCATION</h3>
-                        <p style="margin: 0;">ECOLE SAINTE ANNE<br>2 Rue du château<br>44390 CASSON<br>location.ecolesteanne@gmail.com</p>
-                    </div>
-                    <div style="text-align: right; border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 200px;">
-                        <p style="margin: 0;"><strong>${nom}</strong></p>
-                        <p style="margin: 0;">Tél : ${tel}</p>
-                        <p style="margin: 0;">Mail : ${email}</p>
-                    </div>
-                </div>
+        await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+            nom_loueur: nom,
+            email_destinataire: email,
+            message_html: messageHtml
+        });
 
-                <!-- 1. Date de Location -->
-                <div style="margin-bottom: 20px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">1- Date de Location:</h4>
-                    <p style="margin-left: 10px;"><strong>Date de départ :</strong> ${debut} &nbsp;&nbsp;&nbsp; <strong>Date de retour :</strong> ${fin}</p>
-                </div>
-
-                <!-- 2. Matériels loués -->
-                <div style="margin-bottom: 20px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 10px;">2- Matériels loués :</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #000;">
-                                <th style="padding: 8px; text-align: left;">Articles</th>
-                                <th style="padding: 8px; text-align: center;">Quantités</th>
-                                <th style="padding: 8px; text-align: right;">Prix/unités</th>
-                                <th style="padding: 8px; text-align: right;">Caution/unités</th>
-                                <th style="padding: 8px; text-align: right;">Prix Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${panier.map(a => `
-                                <tr style="border-bottom: 1px solid #eee;">
-                                    <td style="padding: 8px;">${a.nom}</td>
-                                    <td style="padding: 8px; text-align: center;">${a.qty}</td>
-                                    <td style="padding: 8px; text-align: right;">${a.prix.toFixed(2)} €</td>
-                                    <td style="padding: 8px; text-align: right;">${(a.caution_unitaire || 10).toFixed(2)} €</td>
-                                    <td style="padding: 8px; text-align: right;">${(a.qty * a.prix).toFixed(2)} €</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 3. Montant à régler -->
-                <div style="margin-bottom: 20px; border: 1px solid #000; padding: 10px;">
-                    <h4 style="margin: 0 0 5px 0;">3- Montant à régler/Caution:</h4>
-                    <p style="margin: 3px 0;"><strong>Montant Total à régler :</strong> ${totalP}</p>
-                    <p style="margin: 3px 0;"><strong>Montant chèque de caution :</strong> ${totalC}</p>
-                </div>
-
-                <!-- 4. Etat du matériel -->
-                <div style="margin-bottom: 20px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">4- Etat du matériel:</h4>
-                    <div style="border: 1px solid #ccc; height: 50px; padding: 5px; color: #666;">Remarques/observations :</div>
-                </div>
-
-                <!-- 5. Conditions -->
-                <div style="margin-bottom: 20px; font-size: 10px;">
-                    <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px; font-size: 12px;">5- Conditions:</h4>
-                    <p style="margin: 0;">• Une caution sera demandée lors de la remise du matériel.</p>
-                    <p style="margin: 0;">• La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.</p>
-                    <p style="margin: 0;">• Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu'à sa restitution.[cite: 2]</p>
-                    <p style="margin: 0;">• Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l'application de retenues sur la caution.[cite: 2]</p>
-                    <p style="margin: 10px 0; font-weight: bold; text-align: center;">CE CONTRAT NE FAIT FOI QU'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L'OGEC[cite: 2]</p>
-                </div>
-
-                <!-- Signatures -->
-                <div style="display: flex; justify-content: space-between; margin-top: 30px;">
-                    <div style="width: 40%; border-top: 1px solid #000; padding-top: 5px;">Signature OGEC :</div>
-                    <div style="width: 40%; border-top: 1px solid #000; padding-top: 5px;">Signature loueur :</div>
-                </div>
-            </div>
-        `;
-
-        const options = {
-            margin: 10,
-            filename: `Contrat_Location_${nom.replace(/ /g, '_')}.pdf`,
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().set(options).from(element).save();
-
-        // Affichage du succès
+        // Interface succès
         document.getElementById('inventory').innerHTML = `
-            <div class="col-span-full bg-white p-10 rounded-2xl shadow-xl text-center">
-                <div class="text-green-500 text-5xl mb-4">✅</div>
-                <h2 class="text-2xl font-bold">Demande envoyée !</h2>
-                <p class="text-gray-500 mb-6">Le contrat PDF a été généré. L'OGEC vous contactera pour confirmer.</p>
-                <button onclick="window.location.reload()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Fermer</button>
+            <div class="col-span-full text-center p-10 bg-white rounded-xl shadow-lg">
+                <div class="text-green-500 text-6xl mb-4">✔</div>
+                <h2 class="text-2xl font-bold">Réservation confirmée !</h2>
+                <p class="text-gray-500">Le contrat PDF est prêt et un mail a été envoyé.</p>
+                <button onclick="window.location.reload()" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold">Nouvelle réservation</button>
             </div>`;
-        panier = []; majPanier();
+
     } catch (err) {
-        alert("Erreur : " + err.message);
+        console.error(err);
+        alert("Erreur lors de la confirmation.");
+        btn.disabled = false;
+        btn.innerText = "Réessayer";
     }
-}
+};
 
         function creerLienGoogleCalendar(res) {
             const dDebut = res.date_debut.replace(/-/g, '');
