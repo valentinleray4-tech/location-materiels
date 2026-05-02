@@ -98,38 +98,57 @@ let panier = [];
 let itemsData = [];
 
 // Chargement de l'inventaire
-async function fetchMateriels() {
-try {
-const { data, error } = await supabase.from('materiels').select('*');
-if (error) throw error;
-itemsData = data;
-renderInventory();
-document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
-} catch (err) {
-document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
+aasync function fetchMateriels() {
+    try {
+        const { data, error } = await supabase.from('materiels').select('*');
+        if (error) throw error;
+        itemsData = data;
+        
+        // C'est ici que l'on dessine l'inventaire (initialement bloqué)
+        renderInventory(); 
+        
+        document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
+    } catch (err) {
+        document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
+    }
 }
-}
-
+// Ajoutez ceci juste après la fonction fetchMateriels
+document.getElementById('date_debut').addEventListener('change', renderInventory);
+document.getElementById('date_fin').addEventListener('change', renderInventory);
+    
 function renderInventory() {
-const container = document.getElementById('inventory');
-container.innerHTML = itemsData.map(item => `
-           <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
-               <div class="h-40 bg-gray-100 relative">
-                   <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                   <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
-               </div>
-               <div class="p-4 flex flex-col justify-between flex-grow">
-                   <div>
-                       <h3 class="font-bold text-gray-800">${item.nom}</h3>
-                       <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
-                   </div>
-                   <div class="mt-4 flex gap-2">
-                       <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm">
-                       <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
-                   </div>
-               </div>
-           </div>
-       `).join('');
+    const container = document.getElementById('inventory');
+    
+    // On vérifie si les deux dates sont saisies
+    const dateDebut = document.getElementById('date_debut').value;
+    const dateFin = document.getElementById('date_fin').value;
+    const datesRemplies = dateDebut !== "" && dateFin !== "";
+
+    container.innerHTML = itemsData.map(item => `
+        <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
+            <div class="h-40 bg-gray-100 relative">
+                <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
+            </div>
+            <div class="p-4 flex flex-col justify-between flex-grow">
+                <div>
+                    <h3 class="font-bold text-gray-800">${item.nom}</h3>
+                    <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
+                </div>
+                <div class="mt-4 flex gap-2 ${!datesRemplies ? 'opacity-50' : ''}">
+                    <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" 
+                        ${!datesRemplies ? 'disabled' : ''} 
+                        class="w-12 border rounded text-center text-sm">
+                    
+                    <button onclick="ajouterAuPanier(${item.id})" 
+                        ${!datesRemplies ? 'disabled' : ''} 
+                        class="flex-1 ${datesRemplies ? 'bg-indigo-600' : 'bg-gray-400 cursor-not-allowed'} text-white text-xs py-2 rounded font-bold">
+                        ${datesRemplies ? 'Ajouter' : 'Saisir dates'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
 }
 
 window.ajouterAuPanier = (id) => {
