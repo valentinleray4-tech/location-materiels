@@ -4,23 +4,13 @@
     <meta charset="UTF-8">
     <title>Admin - Réservations & Calendrier</title>
 
-    <!-- Tailwind pour le style -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-    <!-- FullCalendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* Ajustement pour que le calendrier ne soit pas trop géant */
-        #calendar {
-            max-height: 700px;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        #calendar { max-height: 700px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .fc-event { cursor: pointer; }
     </style>
 
@@ -32,7 +22,51 @@
             'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
         );
 
+        const ADMIN_CODE = "APEL2024"; // Le code de sécurité partagé
+
+        // 1. FONCTION DE SÉCURITÉ ET D'IDENTIFICATION
+        function identifierAdmin() {
+            let adminName = sessionStorage.getItem('admin_name');
+            
+            if (!adminName) {
+                const code = prompt("Code de sécurité requis :");
+                if (code !== ADMIN_CODE) {
+                    alert("Code incorrect");
+                    document.body.innerHTML = "<div class='text-center mt-20 text-red-600 font-bold text-2xl'>Accès refusé : Code incorrect</div>";
+                    return null;
+                }
+                
+                adminName = prompt("Votre Prénom (pour le suivi des validations) :");
+                if (!adminName) {
+                    alert("Le prénom est obligatoire pour tracer les actions.");
+                    location.reload();
+                    return null;
+                }
+                sessionStorage.setItem('admin_name', adminName);
+            }
+            return adminName;
+        }
+
+        // 2. MODIFICATION DU STATUT AVEC TRAÇABILITÉ
+        window.modifierStatut = async (id, nouveauStatut) => {
+            const adminQuiValide = identifierAdmin();
+            if (!adminQuiValide) return;
+
+            const { error } = await supabase
+                .from('reservations')
+                .update({ 
+                    statut: nouveauStatut,
+                    valide_par: adminQuiValide // Enregistre qui a cliqué
+                })
+                .eq('id', id);
+
+            if (error) alert("Erreur lors de la mise à jour");
+            else init(); // Recharge les données sans rafraîchir toute la page
+        };
+
         async function init() {
+            if (!identifierAdmin()) return; // Vérifie l'accès au chargement[cite: 2]
+
             const { data: reservations, error } = await supabase
                 .from('reservations')
                 .select('*')
@@ -47,57 +81,79 @@
             renderCalendar(reservations);
         }
 
-        // 1. Affichage de la liste classique
+        // 3. AFFICHAGE DE LA LISTE AVEC BOUTONS ET SUIVI[cite: 2]
         function renderList(data) {
             const container = document.getElementById('list');
-            container.innerHTML = data.map(r => `
-                <div class="bg-white p-4 rounded shadow border-l-4 border-indigo-500">
-                    <div class="flex justify-between items-center">
-                        <strong class="text-lg">${r.nom_loueur}</strong>
-                        <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                            ${r.date_debut} → ${r.date_fin}
-                        </span>
+            container.innerHTML = data.map(r => {
+                const statutCouleur = r.statut === 'Confirmé' ? 'bg-green-100 text-green-800' : 
+                                     r.statut === 'Refusé' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800';
+                
+                const borderCouleur = r.statut === 'Confirmé' ? 'border-green-500' : 
+                                     r.statut === 'Refusé' ? 'border-red-500' : 'border-orange-500';
+
+                return `
+                    <div class="bg-white p-4 rounded shadow border-l-4 ${borderCouleur}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <strong class="text-lg block">${r.nom_loueur}</strong>
+                                <span class="${statutCouleur} text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                                    ${r.statut || 'En attente'}
+                                </span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                ${r.date_debut} → ${r.date_fin}
+                            </span>
+                        </div>
+                        
+                        <div class="text-sm text-gray-600 mt-3 space-y-1 bg-gray-50 p-2 rounded">
+                            ${r.articles.map(a => `<div class="flex justify-between"><span>${a.qty}x ${a.nom}</span></div>`).join('')}
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <a href="${r.pdf_url}" target="_blank" class="text-indigo-600 text-xs font-bold hover:underline">
+                                    <i class="fas fa-file-pdf mr-1"></i> Contrat PDF
+                                </a>
+                                <span class="text-[9px] italic text-gray-400">
+                                    ${r.valide_par ? `Traité par : ${r.valide_par}` : 'Non traité'}
+                                </span>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="modifierStatut(${r.id}, 'Confirmé')" class="flex-1 py-1.5 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600 transition">Valider</button>
+                                <button onclick="modifierStatut(${r.id}, 'Refusé')" class="flex-1 py-1.5 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600 transition">Refuser</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-sm text-gray-600 mt-2">
-                        ${r.articles.map(a => `<span class="inline-block bg-gray-100 rounded px-2 py-1 m-1">${a.qty}x ${a.nom}</span>`).join('')}
-                    </div>
-                    <div class="mt-2 font-bold text-indigo-600">${r.total_prix} €</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // 2. Affichage du Calendrier
+        // 4. CALENDRIER AVEC COULEURS DE STATUT[cite: 2]
         function renderCalendar(data) {
             const calendarEl = document.getElementById('calendar');
             
-            // On transforme les données Supabase au format FullCalendar
             const events = data.map(r => ({
-                title: `${r.nom_loueur} (${r.total_prix}€)`,
+                title: `${r.nom_loueur} (${r.statut || 'Attente'})`,
                 start: r.date_debut,
-                end: r.date_fin, // Note: FullCalendar exclut le jour de fin, vérifiez si vous devez ajouter +1 jour
+                end: r.date_fin,
+                backgroundColor: r.statut === 'Confirmé' ? '#10b981' : (r.statut === 'Refusé' ? '#ef4444' : '#f59e0b'),
+                borderColor: 'transparent',
                 extendedProps: {
-                    articles: r.articles.map(a => `${a.qty}x ${a.nom}`).join(', ')
-                },
-                backgroundColor: '#4f46e5',
-                borderColor: '#4338ca'
+                    articles: r.articles.map(a => `${a.qty}x ${a.nom}`).join(', '),
+                    validateur: r.valide_par || 'Aucun'
+                }
             }));
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'fr',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                buttonText: {
-                    today: "Aujourd'hui",
-                    month: "Mois",
-                    week: "Semaine"
-                },
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
                 events: events,
                 eventClick: function(info) {
-                    alert('Client: ' + info.event.title + '\nMatériel: ' + info.event.extendedProps.articles);
+                    alert('Client: ' + info.event.title + 
+                          '\nArticles: ' + info.event.extendedProps.articles + 
+                          '\nTraité par: ' + info.event.extendedProps.validateur);
                 }
             });
 
@@ -109,32 +165,31 @@
 </head>
 
 <body class="bg-gray-100 p-6">
-
     <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl font-extrabold mb-8 text-gray-800 border-b pb-4">📊 Tableau de Bord Réservations</h1>
+        <div class="flex justify-between items-center mb-8 border-b pb-4">
+            <h1 class="text-3xl font-extrabold text-gray-800">📊 Tableau de Bord APEL</h1>
+            <button onclick="sessionStorage.clear(); location.reload();" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-gray-600 font-bold">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </button>
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Colonne Calendrier (Large) -->
             <div class="lg:col-span-2">
-                <h2 class="text-xl font-bold mb-4 flex items-center">
-                    <span class="mr-2">📅</span> Calendrier des locations
+                <h2 class="text-xl font-bold mb-4 flex items-center text-gray-700">
+                    <span class="mr-2 text-indigo-500">📅</span> Calendrier des locations
                 </h2>
                 <div id="calendar"></div>
             </div>
 
-            <!-- Colonne Liste (Étroite) -->
             <div class="lg:col-span-1">
-                <h2 class="text-xl font-bold mb-4 flex items-center">
-                    <span class="mr-2">📋</span> Dernières entrées
+                <h2 class="text-xl font-bold mb-4 flex items-center text-gray-700">
+                    <span class="mr-2 text-indigo-500">📋</span> Gestion des demandes
                 </h2>
                 <div id="list" class="space-y-4 overflow-y-auto" style="max-height: 700px;">
                     <!-- Les réservations s'affichent ici -->
                 </div>
             </div>
-
         </div>
     </div>
-
 </body>
 </html>
