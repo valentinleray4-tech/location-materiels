@@ -1,250 +1,251 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loc'APE - Gestion des Locations</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-    <!-- AJOUT DE LA BIBLIOTHEQUE EMAILJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loc'APE - Gestion des Locations</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<!-- AJOUT DE LA BIBLIOTHEQUE EMAILJS -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <header class="bg-indigo-700 text-white shadow-md p-6">
-        <div class="container mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold">Loc'APEL école St Anne-Casson</h1>
-                <p class="text-indigo-100 italic">Réservez, louez, aidez l'école !</p>
-            </div>
-            <div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200">
-                <i class="fas fa-database mr-1"></i> Connexion base de données...
-            </div>
-        </div>
-    </header>
+<header class="bg-indigo-700 text-white shadow-md p-6">
+<div class="container mx-auto flex justify-between items-center">
+<div>
+<h1 class="text-2xl font-bold">Loc'APEL école St Anne-Casson</h1>
+<p class="text-indigo-100 italic">Réservez, louez, aidez l'école !</p>
+</div>
+<div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200">
+<i class="fas fa-database mr-1"></i> Connexion base de données...
+</div>
+</div>
+</header>
 
-    <main class="container mx-auto py-8 px-4 grid lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white p-6 rounded-xl shadow-sm min-h-[400px]">
-                <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">Inventaire disponible</h2>
-                <div class="grid md:grid-cols-2 gap-6" id="inventory">
-                    <p class="text-gray-400">Chargement du matériel...</p>
-                </div>
-            </div>
-        </div>
+<main class="container mx-auto py-8 px-4 grid lg:grid-cols-3 gap-8">
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-white p-6 rounded-xl shadow-sm min-h-[400px]">
+<h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">Inventaire disponible</h2>
+<div class="grid md:grid-cols-2 gap-6" id="inventory">
+<p class="text-gray-400">Chargement du matériel...</p>
+</div>
+</div>
+</div>
 
-        <aside class="space-y-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
-                <h2 class="text-xl font-bold mb-4">Récapitulatif</h2>
-                
-                <div id="panierList" class="space-y-3 mb-6 max-h-60 overflow-y-auto border-b pb-4">
-                    <p class="text-gray-400 italic text-center">Aucun article sélectionné</p>
-                </div>
+<aside class="space-y-6">
+<div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
+<h2 class="text-xl font-bold mb-4">Récapitulatif</h2>
 
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between text-gray-600">
-                        <span>Total Location :</span>
-                        <span id="totalPrix" class="font-bold">0.00 €</span>
-                    </div>
-                    <div class="flex justify-between text-orange-600 bg-orange-50 p-2 rounded">
-                        <span class="text-sm">Caution à prévoir :</span>
-                        <span id="totalCaution" class="font-bold">0.00 €</span>
-                    </div>
-                </div>
+<div id="panierList" class="space-y-3 mb-6 max-h-60 overflow-y-auto border-b pb-4">
+<p class="text-gray-400 italic text-center">Aucun article sélectionné</p>
+</div>
 
-                <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
-                        <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
-                    </h3>
-                    <div class="grid grid-cols-1 gap-3">
-                        <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full outline-none">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm outline-none">
-                            <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm outline-none">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="flex flex-col">
-                                <label class="text-[10px] font-bold text-gray-400 uppercase">Début</label>
-                                <input type="date" id="date_debut" class="p-2 border rounded text-sm outline-none">
-                            </div>
-                            <div class="flex flex-col">
-                                <label class="text-[10px] font-bold text-gray-400 uppercase">Fin</label>
-                                <input type="date" id="date_fin" class="p-2 border rounded text-sm outline-none">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div class="space-y-2 mb-6">
+<div class="flex justify-between text-gray-600">
+<span>Total Location :</span>
+<span id="totalPrix" class="font-bold">0.00 €</span>
+</div>
+<div class="flex justify-between text-orange-600 bg-orange-50 p-2 rounded">
+<span class="text-sm">Caution à prévoir :</span>
+<span id="totalCaution" class="font-bold">0.00 €</span>
+</div>
+</div>
 
-                <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
-                    Confirmer la réservation
-                </button>
-            </div>
-        </aside>
-    </main>
+<div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+<h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
+<i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
+</h3>
+<div class="grid grid-cols-1 gap-3">
+<input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full outline-none">
+<div class="grid grid-cols-2 gap-2">
+<input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm outline-none">
+<input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm outline-none">
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="flex flex-col">
+<label class="text-[10px] font-bold text-gray-400 uppercase">Début</label>
+<input type="date" id="date_debut" class="p-2 border rounded text-sm outline-none">
+</div>
+<div class="flex flex-col">
+<label class="text-[10px] font-bold text-gray-400 uppercase">Fin</label>
+<input type="date" id="date_fin" class="p-2 border rounded text-sm outline-none">
+</div>
+</div>
+</div>
+</div>
 
-   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+<button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
+Confirmer la réservation
+</button>
+</div>
+</aside>
+</main>
 
-    const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZmt6bGdxcnl4aGphb3ZpZHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzUzNzAsImV4cCI6MjA5MzA1MTM3MH0.PO7vsGf8IfgnhRvegxfrCMDrYU5qhcBW8C789RCq0i8'
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    // INITIALISATION EMAILJS - METS TA CLÉ PUBLIQUE ICI
+const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZmt6bGdxcnl4aGphb3ZpZHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzUzNzAsImV4cCI6MjA5MzA1MTM3MH0.PO7vsGf8IfgnhRvegxfrCMDrYU5qhcBW8C789RCq0i8'
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// INITIALISATION EMAILJS - METS TA CLÉ PUBLIQUE ICI
+    emailjs.init("TON_ID_PUBLIC_ICI"); 
     emailjs.init("nOykns8pFjxSLoS1s"); 
 
-    let panier = [];
-    let itemsData = [];
+let panier = [];
+let itemsData = [];
 
-    // Chargement de l'inventaire
-    async function fetchMateriels() {
-        try {
-            const { data, error } = await supabase.from('materiels').select('*');
-            if (error) throw error;
-            itemsData = data;
-            renderInventory();
-            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
-        } catch (err) {
-            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
-        }
-    }
+// Chargement de l'inventaire
+async function fetchMateriels() {
+try {
+const { data, error } = await supabase.from('materiels').select('*');
+if (error) throw error;
+itemsData = data;
+renderInventory();
+document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
+} catch (err) {
+document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
+}
+}
 
-    function renderInventory() {
-        const container = document.getElementById('inventory');
-        container.innerHTML = itemsData.map(item => `
-            <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
-                <div class="h-40 bg-gray-100 relative">
-                    <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                    <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
-                </div>
-                <div class="p-4 flex flex-col justify-between flex-grow">
-                    <div>
-                        <h3 class="font-bold text-gray-800">${item.nom}</h3>
-                        <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
-                    </div>
-                    <div class="mt-4 flex gap-2">
-                        <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm">
-                        <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
+function renderInventory() {
+const container = document.getElementById('inventory');
+container.innerHTML = itemsData.map(item => `
+           <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
+               <div class="h-40 bg-gray-100 relative">
+                   <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                   <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">Stock : ${item.stock_total}</span>
+               </div>
+               <div class="p-4 flex flex-col justify-between flex-grow">
+                   <div>
+                       <h3 class="font-bold text-gray-800">${item.nom}</h3>
+                       <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
+                   </div>
+                   <div class="mt-4 flex gap-2">
+                       <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm">
+                       <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
+                   </div>
+               </div>
+           </div>
+       `).join('');
+}
 
-    window.ajouterAuPanier = (id) => {
-        const item = itemsData.find(i => i.id === id);
-        const qty = parseInt(document.getElementById(`qty-${id}`).value);
-        const index = panier.findIndex(p => p.id === id);
-        if (index > -1) panier[index].qty += qty;
-        else panier.push({ ...item, qty: qty });
-        majPanier();
-    };
+window.ajouterAuPanier = (id) => {
+const item = itemsData.find(i => i.id === id);
+const qty = parseInt(document.getElementById(`qty-${id}`).value);
+const index = panier.findIndex(p => p.id === id);
+if (index > -1) panier[index].qty += qty;
+else panier.push({ ...item, qty: qty });
+majPanier();
+};
 
-    window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
+window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
 
-    function majPanier() {
-        const container = document.getElementById('panierList');
-        let totalP = 0, totalC = 0;
-        container.innerHTML = panier.map((item, index) => {
-            totalP += (item.qty * item.prix);
-            totalC += (item.qty * (item.caution_unitaire || 0));
-            return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
-                <span>${item.qty}x ${item.nom}</span>
-                <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
-            </div>`;
-        }).join('');
-        document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
-        document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
-    }
+function majPanier() {
+const container = document.getElementById('panierList');
+let totalP = 0, totalC = 0;
+container.innerHTML = panier.map((item, index) => {
+totalP += (item.qty * item.prix);
+totalC += (item.qty * (item.caution_unitaire || 0));
+return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
+               <span>${item.qty}x ${item.nom}</span>
+               <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
+           </div>`;
+}).join('');
+document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
+document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
+}
 
-    window.confirmerReservation = async () => {
-        const btn = document.getElementById('btnSubmit');
-        const info = {
-            nom: document.getElementById('nom_loueur').value,
-            email: document.getElementById('email_loueur').value,
-            tel: document.getElementById('tel_loueur').value,
-            debut: document.getElementById('date_debut').value,
-            fin: document.getElementById('date_fin').value,
-            totalP: document.getElementById('totalPrix').innerText,
-            totalC: document.getElementById('totalCaution').innerText
-        };
+window.confirmerReservation = async () => {
+const btn = document.getElementById('btnSubmit');
+const info = {
+nom: document.getElementById('nom_loueur').value,
+email: document.getElementById('email_loueur').value,
+tel: document.getElementById('tel_loueur').value,
+debut: document.getElementById('date_debut').value,
+fin: document.getElementById('date_fin').value,
+totalP: document.getElementById('totalPrix').innerText,
+totalC: document.getElementById('totalCaution').innerText
+};
 
-        if (!info.nom || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations.");
+if (!info.nom || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations.");
 
-        btn.disabled = true;
-        btn.innerText = "Génération et envoi en cours...";
+btn.disabled = true;
+btn.innerText = "Génération et envoi en cours...";
 
-        const docDefinition = {
-            pageSize: 'A4',
-            pageMargins: [40, 40, 40, 40],
-            content: [
-                { text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', style: 'mainTitle' },
-                { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] },
-                { text: '\n' },
-                {
-                    columns: [
-                        { width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'location.ecolesteanne@gmail.com'], fontSize: 9 },
-                        { width: 200, stack: [{ text: info.nom, bold: true }, `Tél : ${info.tel}`, `Mail : ${info.email}`], alignment: 'right', fontSize: 9 }
-                    ]
-                },
-                { text: '\n1- Date de Location:', style: 'sectionHeader' },
-                { text: `Date de départ : ${info.debut}       Date de retour : ${info.fin}`, margin: [10, 5, 0, 15], fontSize: 10 },
-                { text: '2- Matériels loués :', style: 'sectionHeader' },
-                {
-                    table: {
-                        headerRows: 1,
-                        widths: ['*', 'auto', 'auto', 'auto'],
-                        body: [
-                            [{text:'Articles', style:'tableHeader'}, {text:'Quantités', style:'tableHeader', alignment:'center'}, {text:'Caution/u', style:'tableHeader', alignment:'right'}, {text:'Prix Total', style:'tableHeader', alignment:'right'}],
-                            ...panier.map(i => [i.nom, i.qty.toString(), `${(i.caution_unitaire || 0).toFixed(2)} €`, `${(i.qty * i.prix).toFixed(2)} €`])
-                        ]
-                    }, layout: 'lightHorizontalLines'
-                },
-                { text: '\n' },
-                {
-                    table: {
-                        widths: ['*'],
-                        body: [[{
-                            stack: [
-                                { text: '3- Montant à régler/Caution:', bold: true, fontSize: 10 },
-                                { text: `Montant Total à régler : ${info.totalP}`, margin: [0, 5, 0, 0] },
-                                { text: `Montant chèque de caution : ${info.totalC}`, bold: true }
-                            ], padding: [10, 10, 10, 10]
-                        }]]
-                    }
-                },
-                { text: '\n4- Etat du matériel:', style: 'sectionHeader' },
-                { text: 'Remarques/observations :', fontSize: 9, color: '#666' },
-                { canvas: [{ type: 'rect', x: 0, y: 5, w: 515, h: 40, lineWidth: 0.5, lineColor: '#ccc' }] },
-                { text: '\n5- Conditions:', style: 'sectionHeader' },
-                {
-                    ul: [
-                        { text: 'Une caution sera demandée lors de la remise du matériel.', fontSize: 8 },
-                        { text: 'La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.', fontSize: 8 },
-                        { text: 'Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu\'à sa restitution.', fontSize: 8 },
-                        { text: 'Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l\'application de retenues sur la caution.', fontSize: 8 }
-                    ], margin: [0, 5, 0, 10]
-                },
-                { text: 'CE CONTRAT NE FAIT FOI QU\'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L\'OGEC', alignment: 'center', bold: true, fontSize: 10, margin: [0, 15, 0, 20] },
-                {
-                    columns: [
-                        { stack: [{ text: 'Signature OGEC :', decoration: 'underline', fontSize: 10 }, { text: '\n\n' }] },
-                        { stack: [{ text: 'Signature loueur :', decoration: 'underline', fontSize: 10, alignment: 'right' }, { text: '\n\n' }] }
-                    ]
-                }
-            ],
-            styles: {
-                mainTitle: { fontSize: 14, bold: true, alignment: 'center' },
-                sectionHeader: { fontSize: 11, bold: true, background: '#e5e7eb', margin: [0, 15, 0, 5] },
-                tableHeader: { fontSize: 9, bold: true, fillColor: '#f3f4f6' }
-            }
-        };
+const docDefinition = {
+pageSize: 'A4',
+pageMargins: [40, 40, 40, 40],
+content: [
+{ text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', style: 'mainTitle' },
+{ canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] },
+{ text: '\n' },
+{
+columns: [
+{ width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'location.ecolesteanne@gmail.com'], fontSize: 9 },
+{ width: 200, stack: [{ text: info.nom, bold: true }, `Tél : ${info.tel}`, `Mail : ${info.email}`], alignment: 'right', fontSize: 9 }
+]
+},
+{ text: '\n1- Date de Location:', style: 'sectionHeader' },
+{ text: `Date de départ : ${info.debut}       Date de retour : ${info.fin}`, margin: [10, 5, 0, 15], fontSize: 10 },
+{ text: '2- Matériels loués :', style: 'sectionHeader' },
+{
+table: {
+headerRows: 1,
+widths: ['*', 'auto', 'auto', 'auto'],
+body: [
+[{text:'Articles', style:'tableHeader'}, {text:'Quantités', style:'tableHeader', alignment:'center'}, {text:'Caution/u', style:'tableHeader', alignment:'right'}, {text:'Prix Total', style:'tableHeader', alignment:'right'}],
+...panier.map(i => [i.nom, i.qty.toString(), `${(i.caution_unitaire || 0).toFixed(2)} €`, `${(i.qty * i.prix).toFixed(2)} €`])
+]
+}, layout: 'lightHorizontalLines'
+},
+{ text: '\n' },
+{
+table: {
+widths: ['*'],
+body: [[{
+stack: [
+{ text: '3- Montant à régler/Caution:', bold: true, fontSize: 10 },
+{ text: `Montant Total à régler : ${info.totalP}`, margin: [0, 5, 0, 0] },
+{ text: `Montant chèque de caution : ${info.totalC}`, bold: true }
+], padding: [10, 10, 10, 10]
+}]]
+}
+},
+{ text: '\n4- Etat du matériel:', style: 'sectionHeader' },
+{ text: 'Remarques/observations :', fontSize: 9, color: '#666' },
+{ canvas: [{ type: 'rect', x: 0, y: 5, w: 515, h: 40, lineWidth: 0.5, lineColor: '#ccc' }] },
+{ text: '\n5- Conditions:', style: 'sectionHeader' },
+{
+ul: [
+{ text: 'Une caution sera demandée lors de la remise du matériel.', fontSize: 8 },
+{ text: 'La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.', fontSize: 8 },
+{ text: 'Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu\'à sa restitution.', fontSize: 8 },
+{ text: 'Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l\'application de retenues sur la caution.', fontSize: 8 }
+], margin: [0, 5, 0, 10]
+},
+{ text: 'CE CONTRAT NE FAIT FOI QU\'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L\'OGEC', alignment: 'center', bold: true, fontSize: 10, margin: [0, 15, 0, 20] },
+{
+columns: [
+{ stack: [{ text: 'Signature OGEC :', decoration: 'underline', fontSize: 10 }, { text: '\n\n' }] },
+{ stack: [{ text: 'Signature loueur :', decoration: 'underline', fontSize: 10, alignment: 'right' }, { text: '\n\n' }] }
+]
+}
+],
+styles: {
+mainTitle: { fontSize: 14, bold: true, alignment: 'center' },
+sectionHeader: { fontSize: 11, bold: true, background: '#e5e7eb', margin: [0, 15, 0, 5] },
+tableHeader: { fontSize: 9, bold: true, fillColor: '#f3f4f6' }
+}
+};
 
-        try {
-            const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+try {
+const pdfDocGenerator = pdfMake.createPdf(docDefinition);
 
-            // ... (reste du code identique au-dessus)
+// ... (reste du code identique au-dessus)
 
 pdfDocGenerator.getBlob(async (blob) => {
     const fileName = `contrat_${Date.now()}_${info.nom.replace(/\s/g, '_')}.pdf`;
@@ -296,3 +297,7 @@ pdfDocGenerator.getBlob(async (blob) => {
     alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
     window.location.reload();
 });
+
+fetchMateriels();
+</script>
+</html>
