@@ -1,311 +1,251 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loc'APE - Gestion des Locations</title>
+    <title>Loc'APEL école St Anne-Casson</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Initialisation EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script type="text/javascript">(function(){ emailjs.init("nOykns8pFjxSLoS1s"); })();</script>
-</head>
-<body class="bg-gray-100 min-h-screen">
 
-    <header class="bg-indigo-700 text-white shadow-md p-6">
-        <div class="container mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold">Loc'APEL école St Anne-Casson</h1>
-                <p class="text-indigo-100 italic">Réservez, louez, aidez l'école !</p>
-            </div>
-            <div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200">
-                <i class="fas fa-database mr-1"></i> Connexion base de données...
-            </div>
-        </div>
-    </header>
-
-    <main class="container mx-auto py-8 px-4 grid lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white p-6 rounded-xl shadow-sm min-h-[400px]">
-                <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">Inventaire disponible</h2>
-                <div class="grid md:grid-cols-2 gap-6" id="inventory">
-                    <p class="text-gray-400">Chargement du matériel...</p>
-                </div>
-            </div>
-        </div>
-
-        <aside class="space-y-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
-                <h2 class="text-xl font-bold mb-4">Récapitulatif</h2>
-                
-                <div id="panierList" class="space-y-3 mb-6 max-h-60 overflow-y-auto border-b pb-4">
-                    <p class="text-gray-400 italic text-center">Aucun article sélectionné</p>
-                </div>
-
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between text-gray-600">
-                        <span>Total Location :</span>
-                        <span id="totalPrix" class="font-bold">0.00 €</span>
-                    </div>
-                    <div class="flex justify-between text-orange-600 bg-orange-50 p-2 rounded">
-                        <span class="text-sm">Caution à prévoir :</span>
-                        <span id="totalCaution" class="font-bold">0.00 €</span>
-                    </div>
-                </div>
-
-                <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
-                        <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
-                    </h3>
-                    <div class="grid grid-cols-1 gap-3">
-                        <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none">
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="flex flex-col">
-                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Début</label>
-                                <input type="date" id="date_debut" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            </div>
-                            <div class="flex flex-col">
-                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fin</label>
-                                <input type="date" id="date_fin" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
-                    Confirmer la réservation
-                </button>
-            </div>
-        </aside>
-    </main>
-
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-        const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
-        const SUPABASE_KEY = 'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
-
-        let panier = [];
-        let itemsData = [];
-
-        async function fetchMateriels() {
-            try {
-                const { data, error } = await supabase.from('materiels').select('*');
-                if (error) throw error;
-                itemsData = data;
-                renderInventory();
-                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté à Supabase';
-            } catch (err) {
-                console.error(err);
-                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur de connexion';
-            }
-        }
-
-        function renderInventory() {
-            const container = document.getElementById('inventory');
-            container.innerHTML = itemsData.map(item => `
-                <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
-                    <div class="h-40 bg-gray-100 relative">
-                        <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                        <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">
-                            Stock : ${item.stock_total}
-                        </span>
-                    </div>
-                    <div class="p-4 flex flex-col justify-between flex-grow">
-                        <div>
-                            <h3 class="font-bold text-gray-800">${item.nom}</h3>
-                            <p class="text-xs text-gray-500 mb-2">${item.description || ''}</p>
-                            <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm border-indigo-100">
-                            <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        window.ajouterAuPanier = (id) => {
-            const item = itemsData.find(i => i.id === id);
-            const qtyInput = document.getElementById(`qty-${id}`);
-            const qtySouhaitee = parseInt(qtyInput.value);
-            const index = panier.findIndex(p => p.id === id);
-            const qtyDejaDansPanier = index > -1 ? panier[index].qty : 0;
-            const totalApresAjout = qtyDejaDansPanier + qtySouhaitee;
-
-            if (totalApresAjout > item.stock_total) {
-                const restePossible = item.stock_total - qtyDejaDansPanier;
-                if (restePossible > 0) alert(`Limite atteinte ! Il ne reste que ${restePossible} article(s) disponible(s).`);
-                else alert(`Désolé, tout le stock est déjà dans votre panier.`);
-                return;
-            }
-
-            if (index > -1) panier[index].qty = totalApresAjout;
-            else panier.push({ ...item, qty: qtySouhaitee });
-            
-            majPanier();
-        };
-
-        window.supprimerItem = (index) => {
-            panier.splice(index, 1);
-            majPanier();
-        };
-
-        function majPanier() {
-            const container = document.getElementById('panierList');
-            let totalP = 0; let totalC = 0;
-            if (panier.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 italic text-center py-4">Le panier est vide</p>';
-            } else {
-                container.innerHTML = panier.map((item, index) => {
-                    totalP += (item.qty * item.prix);
-                    totalC += (item.qty * (item.caution_unitaire || 0)); 
-                    return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded border border-gray-100">
-                        <span>${item.qty}x ${item.nom}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold">${(item.qty * item.prix).toFixed(2)}€</span>
-                            <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-            document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
-            document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
-        }
-
-        window.confirmerReservation = async () => {
-            const btn = document.getElementById('btnSubmit');
-            const nom = document.getElementById('nom_loueur').value;
-            const email = document.getElementById('email_loueur').value;
-            const tel = document.getElementById('tel_loueur').value;
-            const debut = document.getElementById('date_debut').value;
-            const fin = document.getElementById('date_fin').value;
-            const totalP = document.getElementById('totalPrix').innerText;
-            const totalC = document.getElementById('totalCaution').innerText;
-
-            if (!nom || !email || !debut || !fin || panier.length === 0) {
-                alert("Veuillez remplir tous les champs (Nom, Email, Dates) et choisir du matériel.");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = "Traitement en cours...";
-
-            try {
-                // 1. Envoi à Supabase
-                const { error } = await supabase.from('reservations').insert([{
-                    nom_loueur: nom, email: email, telephone: tel,
-                    date_debut: debut, date_fin: fin, articles: panier,
-                    total_prix: parseFloat(totalP), total_caution: parseFloat(totalC)
-                }]);
-                if (error) throw error;
-
-                // 2. Construction du contenu HTML pour le PDF et le MAIL
-                const element = document.createElement('div');
-                element.style.padding = "30px";
-                element.style.fontSize = "12px";
-                element.innerHTML = `
-                    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; line-height: 1.4;">
-                        <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-                            CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON
-                        </h2>
-
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-                            <div>
-                                <h3 style="margin: 0;">OGEC SERVICE LOCATION</h3>
-                                <p style="margin: 0;">ECOLE SAINTE ANNE<br>2 Rue du château<br>44390 CASSON<br>location.ecolesteanne@gmail.com</p>
-                            </div>
-                            <div style="text-align: right; border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 200px;">
-                                <p style="margin: 0;"><strong>${nom}</strong></p>
-                                <p style="margin: 0;">Tél : ${tel}</p>
-                                <p style="margin: 0;">Mail : ${email}</p>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px;">1- Date de Location:</h4>
-                            <p style="margin-left: 10px;"><strong>Date de départ :</strong> ${debut} &nbsp;&nbsp;&nbsp; <strong>Date de retour :</strong> ${fin}</p>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 10px;">2- Matériels loués :</h4>
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="border-bottom: 2px solid #000;">
-                                        <th style="padding: 8px; text-align: left;">Articles</th>
-                                        <th style="padding: 8px; text-align: center;">Qté</th>
-                                        <th style="padding: 8px; text-align: right;">Prix Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${panier.map(a => `
-                                        <tr style="border-bottom: 1px solid #eee;">
-                                            <td style="padding: 8px;">${a.nom}</td>
-                                            <td style="padding: 8px; text-align: center;">${a.qty}</td>
-                                            <td style="padding: 8px; text-align: right;">${(a.qty * a.prix).toFixed(2)} €</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div style="margin-bottom: 20px; border: 1px solid #000; padding: 10px;">
-                            <h4 style="margin: 0 0 5px 0;">3- Montant à régler/Caution:</h4>
-                            <p style="margin: 3px 0;"><strong>Montant Total à régler :</strong> ${totalP}</p>
-                            <p style="margin: 3px 0;"><strong>Montant chèque de caution :</strong> ${totalC}</p>
-                        </div>
-
-                        <div style="margin-bottom: 20px; font-size: 10px;">
-                            <h4 style="background: #e5e7eb; padding: 5px; margin-bottom: 5px; font-size: 12px;">Conditions:</h4>
-                            <p style="margin: 0;">• La caution ne sera pas encaissée sauf en cas de détérioration ou non-restitution[cite: 2].</p>
-                            <p style="margin: 0;">• Le matériel devra être restitué propre et en bon état[cite: 2].</p>
-                        </div>
-                    </div>
-                `;
-
-                // 3. Génération du PDF pour le client
-                const options = {
-                    margin: 10,
-                    filename: `Contrat_${nom.replace(/ /g, '_')}.pdf`,
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                await html2pdf().set(options).from(element).save();
-
-                // 4. Envoi du mail avec le contenu HTML[cite: 2]
-                await emailjs.send('service_63g35od', 'template_gb5d2wt', {
-                    nom_loueur: nom,
-                    email_destinataire: email,
-                    message_html: element.innerHTML
-                });
-
-                // 5. Affichage du succès
-                document.getElementById('inventory').innerHTML = `
-                    <div class="col-span-full bg-white p-10 rounded-2xl shadow-xl text-center">
-                        <div class="text-green-500 text-5xl mb-4">✅</div>
-                        <h2 class="text-2xl font-bold">Réservation validée !</h2>
-                        <p class="text-gray-500 mb-6">Le contrat a été téléchargé et un e-mail de récapitulatif vous a été envoyé.</p>
-                        <button onclick="window.location.reload()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Nouvelle réservation</button>
-                    </div>`;
-                panier = []; majPanier();
-
-            } catch (err) {
-                alert("Erreur : " + err.message);
-                btn.disabled = false;
-                btn.innerText = "Confirmer la réservation";
-            }
-        };
-
-        fetchMateriels();
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>
+        (function(){
+            emailjs.init("nOykns8pFjxSLoS1s");
+        })();
     </script>
+</head>
+
+<body class="bg-gray-100">
+
+<header class="bg-indigo-700 text-white shadow-md p-6">
+    <div class="container mx-auto">
+        <h1 class="text-2xl font-bold text-center">Loc'APEL école St Anne-Casson</h1>
+    </div>
+</header>
+
+<main class="container mx-auto py-8 px-4 grid lg:grid-cols-3 gap-8">
+
+    <!-- Catalogue -->
+    <div class="lg:col-span-2">
+        <div class="bg-white p-6 rounded-xl shadow-sm min-h-[400px]">
+            <h2 class="text-xl font-bold mb-6 border-b pb-2 text-gray-800 italic">Matériel disponible</h2>
+            <div class="grid md:grid-cols-2 gap-6" id="inventory"></div>
+        </div>
+    </div>
+
+    <!-- Panier -->
+    <aside>
+        <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
+
+            <h2 class="text-xl font-bold mb-4 text-indigo-600">
+                <i class="fas fa-shopping-cart mr-2"></i>Votre Panier
+            </h2>
+
+            <div id="panierList" class="space-y-3 mb-6 border-b pb-4 text-sm text-gray-400 italic">Vide</div>
+
+            <div class="bg-indigo-50 p-3 rounded-lg text-sm mb-6">
+                <div class="flex justify-between font-bold text-gray-700">
+                    <span>Total Location :</span>
+                    <span id="totalPrix">0.00 €</span>
+                </div>
+                <div class="flex justify-between text-orange-700 font-bold">
+                    <span>Caution :</span>
+                    <span id="totalCaution">0.00 €</span>
+                </div>
+            </div>
+
+            <div class="space-y-3 p-4 bg-gray-50 rounded-lg border">
+                <input type="text" id="nom_loueur" placeholder="Nom et Prénom" class="w-full p-2 border rounded text-sm">
+                <input type="email" id="email_loueur" placeholder="Email" class="w-full p-2 border rounded text-sm">
+                <input type="tel" id="tel_loueur" placeholder="Téléphone" class="w-full p-2 border rounded text-sm">
+
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <input type="date" id="date_debut" class="w-full p-2 border rounded text-sm">
+                    <input type="date" id="date_fin" class="w-full p-2 border rounded text-sm">
+                </div>
+            </div>
+
+            <button onclick="confirmerReservation()" id="btnSubmit"
+                class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 transition shadow-lg">
+                Confirmer & Télécharger le contrat
+            </button>
+
+        </div>
+    </aside>
+
+</main>
+
+<!-- PDF -->
+<div class="container mx-auto my-10 p-5 bg-white border max-w-4xl">
+    <div id="pdf-render-zone" style="width:750px;margin:auto;padding:40px;"></div>
+</div>
+
+<script type="module">
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabase = createClient(
+    'https://uofkzlgqryxhjaovidqf.supabase.co',
+    'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
+);
+
+let panier = [];
+let itemsData = [];
+
+/* ------------------ DATA ------------------ */
+
+async function fetchMateriels() {
+    const { data } = await supabase.from('materiels').select('*');
+    itemsData = data || [];
+    renderInventory();
+    majContratVisuel();
+}
+
+/* ------------------ INVENTAIRE ------------------ */
+
+function renderInventory() {
+    document.getElementById('inventory').innerHTML = itemsData.map(item => {
+
+        const qte = panier.find(p => p.id === item.id)?.qty || 0;
+        const stock = (item.stock || 0) - qte;
+
+        return `
+        <div class="border rounded-xl bg-white shadow-sm p-4">
+            <img src="${item.image_url}" class="h-40 w-full object-cover mb-2">
+            <div class="flex justify-between font-bold">
+                <span>${item.nom}</span>
+                <span>${item.prix}€</span>
+            </div>
+            <p class="text-xs text-gray-500">Stock : ${stock}</p>
+
+            <div class="flex gap-2 mt-2">
+                <input type="number" id="qty-${item.id}" value="1" min="1" max="${stock}" class="w-12 border text-center">
+                <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white py-1 rounded">Ajouter</button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+/* ------------------ PANIER ------------------ */
+
+window.ajouterAuPanier = (id) => {
+    const item = itemsData.find(i => i.id === id);
+    const qty = parseInt(document.getElementById(`qty-${id}`).value);
+
+    const index = panier.findIndex(p => p.id === id);
+
+    if (index > -1) panier[index].qty += qty;
+    else panier.push({ ...item, qty });
+
+    renderInventory();
+    majContratVisuel();
+}
+
+window.retirer = (id) => {
+    panier = panier.filter(p => p.id !== id);
+    renderInventory();
+    majContratVisuel();
+}
+
+/* ------------------ CONTRAT ------------------ */
+
+function majContratVisuel() {
+
+    let total = 0;
+    let caution = 0;
+
+    const list = document.getElementById('panierList');
+
+    list.innerHTML = panier.length === 0 ? "Vide" :
+        panier.map(item => {
+            total += item.qty * item.prix;
+            caution += item.qty * (item.caution_unitaire || 0);
+            return `<div>${item.qty}x ${item.nom}</div>`;
+        }).join('');
+
+    document.getElementById('totalPrix').innerText = total.toFixed(2) + " €";
+    document.getElementById('totalCaution').innerText = caution.toFixed(2) + " €";
+
+    document.getElementById('pdf-render-zone').innerHTML = `
+        <h2 style="text-align:center">CONTRAT DE LOCATION</h2>
+        <p>Nom : ${document.getElementById('nom_loueur').value}</p>
+        <p>Total : ${total.toFixed(2)} €</p>
+    `;
+}
+
+/* ------------------ CONFIRMATION ------------------ */
+
+window.confirmerReservation = async () => {
+
+    const btn = document.getElementById('btnSubmit');
+    const nom = document.getElementById('nom_loueur').value;
+
+    if (!nom || panier.length === 0) {
+        alert("Veuillez remplir votre nom et choisir du matériel.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Génération...";
+
+    const element = document.getElementById('pdf-render-zone');
+
+    const opt = {
+        margin: 10,
+        filename: `Contrat_${nom}.pdf`,
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4' }
+    };
+
+    try {
+
+        await new Promise(r => setTimeout(r, 300));
+
+        const worker = html2pdf().set(opt).from(element);
+        const blob = await worker.output('blob');
+
+        /* téléchargement */
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Contrat_${nom}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        /* upload */
+        const path = `contrats/${Date.now()}_${nom}.pdf`;
+
+        await supabase.storage.from('contrats').upload(path, blob, {
+            contentType: 'application/pdf'
+        });
+
+        const { data } = supabase.storage.from('contrats').getPublicUrl(path);
+
+        /* email */
+        await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+            nom_loueur: nom,
+            email_destinataire: document.getElementById('email_loueur').value,
+            lien_pdf: data.publicUrl
+        });
+
+        alert("Réservation OK !");
+        window.location.reload();
+
+    } catch (e) {
+        console.error(e);
+        alert("Erreur PDF");
+        btn.disabled = false;
+    }
+};
+
+fetchMateriels();
+
+</script>
+
 </body>
 </html>
+```
