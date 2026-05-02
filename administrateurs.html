@@ -23,7 +23,30 @@
         );
 
         const ADMIN_CODE = "APEL2024"; // Le code de sécurité partagé
+// ==========================================
+    // INSEREZ LE BLOC ICI (JUSTE APRÈS ADMIN_CODE)
+    // ==========================================
+    window.modifierStatut = async (id, nouveauStatut) => {
+        const adminQuiValide = sessionStorage.getItem('admin_name'); 
+        if (!adminQuiValide) {
+            alert("Erreur d'identification. Veuillez rafraîchir la page.");
+            return;
+        }
 
+        const { error } = await supabase
+            .from('reservations')
+            .update({ 
+                statut: nouveauStatut,
+                valide_par: adminQuiValide 
+            })
+            .eq('id', id);
+
+        if (error) {
+            alert("Erreur Supabase : " + error.message);
+        } else {
+            init(); // Relance le chargement des données pour actualiser l'affichage
+        }
+    };
         // 1. FONCTION DE SÉCURITÉ ET D'IDENTIFICATION
         function identifierAdmin() {
             let adminName = sessionStorage.getItem('admin_name');
