@@ -143,9 +143,9 @@
                 backgroundColor: r.statut === 'Confirmé' ? '#10b981' : (r.statut === 'Refusé' ? '#ef4444' : '#f59e0b'),
                 borderColor: 'transparent',
                 extendedProps: {
-                    articles: r.articles.map(a => `${a.qty}x ${a.nom}`).join(', '),
-                    validateur: r.valide_par || 'Aucun'
-                }
+    articles: r.articles ? r.articles.map(a => `${a.qty}x ${a.nom}`).join(', ') : 'Aucun',
+    validateur: r.valide_par || 'Aucun'
+}
             }));
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
