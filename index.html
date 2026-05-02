@@ -7,8 +7,40 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Ajout de la librairie EmailJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 min-h-screen relative">
+
+    <!-- ZONE CACHÉE POUR LA GÉNÉRATION DU PDF -->
+    <div id="pdf-render-zone" style="position: absolute; top: -9999px; left: -9999px; width: 800px; padding: 40px; background: white; color: black; font-family: sans-serif;">
+        <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 style="font-size: 28px; font-weight: bold; color: #4f46e5;">Contrat de Location</h1>
+            <p style="font-size: 18px; color: #6b7280;">Loc'APEL école St Anne-Casson</p>
+        </div>
+        
+        <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; background: #f3f4f6; padding: 10px;">Informations du loueur</h2>
+        <table style="width: 100%; margin-bottom: 30px; text-align: left;">
+            <tr><td style="padding: 5px 0;"><strong>Nom & Prénom :</strong></td><td id="pdf-nom"></td></tr>
+            <tr><td style="padding: 5px 0;"><strong>Email :</strong></td><td id="pdf-email"></td></tr>
+            <tr><td style="padding: 5px 0;"><strong>Téléphone :</strong></td><td id="pdf-tel"></td></tr>
+            <tr><td style="padding: 5px 0;"><strong>Période :</strong></td><td>Du <span id="pdf-debut"></span> au <span id="pdf-fin"></span></td></tr>
+        </table>
+
+        <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; background: #f3f4f6; padding: 10px;">Matériel loué</h2>
+        <ul id="pdf-items" style="margin-bottom: 30px; line-height: 1.8;"></ul>
+
+        <div style="background: #eef2ff; padding: 20px; border-radius: 8px;">
+            <p style="font-size: 18px;"><strong>Coût total de la location :</strong> <span id="pdf-total" style="color: #4f46e5; font-weight: bold;"></span></p>
+            <p style="font-size: 16px;"><strong>Caution exigée :</strong> <span id="pdf-caution" style="color: #ea580c; font-weight: bold;"></span></p>
+        </div>
+
+        <div style="margin-top: 50px;">
+            <p style="font-style: italic; color: #6b7280; margin-bottom: 80px;">Signature du loueur (précédée de la mention "Lu et approuvé") :</p>
+            <div style="border-bottom: 1px dashed #cbd5e1; width: 300px;"></div>
+        </div>
+    </div>
+    <!-- FIN ZONE PDF -->
 
     <header class="bg-indigo-700 text-white shadow-md p-6">
         <div class="container mx-auto flex justify-between items-center">
@@ -17,7 +49,7 @@
                 <p class="text-indigo-100 italic">Réservez, louez, aidez l'école !</p>
             </div>
             <div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200">
-                <i class="fas fa-database mr-1"></i> Connexion base de données...
+                <i class="fas fa-spinner fa-spin mr-1"></i> Connexion base de données...
             </div>
         </div>
     </header>
@@ -32,7 +64,7 @@
             </div>
         </div>
 
-        <aside class="space-y-6">
+        <aside class="space-y-6" id="asidePanel">
             <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
                 <h2 class="text-xl font-bold mb-4">Récapitulatif</h2>
                 
@@ -52,31 +84,32 @@
                 </div>
 
                 <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-    <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
-        <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
-    </h3>
-    <div class="grid grid-cols-1 gap-3">
-        <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none">
-        
-        <div class="grid grid-cols-2 gap-2">
-            <input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-            <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-        </div>
-        
-        <div class="grid grid-cols-2 gap-2">
-            <div class="flex flex-col">
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Début</label>
-                <input type="date" id="date_debut" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div class="flex flex-col">
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fin</label>
-                <input type="date" id="date_fin" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-        </div>
-    </div>
-</div>
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
+                        <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
+                    </h3>
+                    <div class="grid grid-cols-1 gap-3">
+                        <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none">
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Début</label>
+                                <input type="date" id="date_debut" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fin</label>
+                                <input type="date" id="date_fin" class="p-2 border rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <button onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
+                <!-- Ajout d'un ID sur le bouton -->
+                <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95 disabled:opacity-50">
                     Confirmer la réservation
                 </button>
             </div>
@@ -85,6 +118,11 @@
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // ⚠️ N'oublie pas d'initialiser EmailJS avec ta clé publique (User ID) !
+        // emailjs.init("TA_CLE_PUBLIQUE_EMAILJS_ICI");
+        // AJOUTE CETTE LIGNE ICI :
+    emailjs.init(nOykns8pFjxSLoS1s);
 
         const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
         const SUPABASE_KEY = 'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
@@ -112,7 +150,7 @@
                 <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
                     <div class="h-40 bg-gray-100 relative">
                         <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                        <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase">
+                        <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow">
                             Stock : ${item.stock_total}
                         </span>
                     </div>
@@ -123,46 +161,40 @@
                             <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
                         </div>
                         <div class="mt-4 flex gap-2">
-                            <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm border-indigo-100">
-                            <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold">Ajouter</button>
+                            <input type="number" id="qty-${item.id}" min="1" max="${item.stock_total}" value="1" class="w-12 border rounded text-center text-sm border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button onclick="ajouterAuPanier(${item.id})" class="flex-1 bg-indigo-600 text-white text-xs py-2 rounded font-bold hover:bg-indigo-700 transition">Ajouter</button>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-       window.ajouterAuPanier = (id) => {
-    const item = itemsData.find(i => i.id === id);
-    const qtyInput = document.getElementById(`qty-${id}`);
-    const qtySouhaitee = parseInt(qtyInput.value);
+        window.ajouterAuPanier = (id) => {
+            const item = itemsData.find(i => i.id === id);
+            const qtyInput = document.getElementById(`qty-${id}`);
+            const qtySouhaitee = parseInt(qtyInput.value);
 
-    // 1. On cherche si l'article est déjà dans le panier
-    const index = panier.findIndex(p => p.id === id);
-    const qtyDejaDansPanier = index > -1 ? panier[index].qty : 0;
+            const index = panier.findIndex(p => p.id === id);
+            const qtyDejaDansPanier = index > -1 ? panier[index].qty : 0;
+            const totalApresAjout = qtyDejaDansPanier + qtySouhaitee;
 
-    // 2. Calcul du total après ajout
-    const totalApresAjout = qtyDejaDansPanier + qtySouhaitee;
+            if (totalApresAjout > item.stock_total) {
+                const restePossible = item.stock_total - qtyDejaDansPanier;
+                if (restePossible > 0) {
+                    alert(`Limite atteinte ! Vous avez déjà ${qtyDejaDansPanier} article(s) dans le panier. Vous ne pouvez en ajouter que ${restePossible}.`);
+                } else {
+                    alert(`Désolé, tout le stock disponible (${item.stock_total}) est déjà dans votre panier.`);
+                }
+                return;
+            }
 
-    // 3. Vérification par rapport au stock réel de Supabase
-    if (totalApresAjout > item.stock_total) {
-        const restePossible = item.stock_total - qtyDejaDansPanier;
-        if (restePossible > 0) {
-            alert(`Limite atteinte ! Vous avez déjà ${qtyDejaDansPanier} article(s) dans le panier. Vous ne pouvez en ajouter que ${restePossible} de plus.`);
-        } else {
-            alert(`Désolé, tout le stock disponible (${item.stock_total}) est déjà dans votre panier.`);
-        }
-        return; // On arrête l'ajout
-    }
-
-    // 4. Si c'est bon, on ajoute
-    if (index > -1) {
-        panier[index].qty = totalApresAjout;
-    } else {
-        panier.push({ ...item, qty: qtySouhaitee });
-    }
-    
-    majPanier();
-};
+            if (index > -1) {
+                panier[index].qty = totalApresAjout;
+            } else {
+                panier.push({ ...item, qty: qtySouhaitee });
+            }
+            majPanier();
+        };
 
         window.supprimerItem = (index) => {
             panier.splice(index, 1);
@@ -182,7 +214,7 @@
                         <span>${item.qty}x ${item.nom}</span>
                         <div class="flex items-center gap-2">
                             <span class="font-bold">${(item.qty * item.prix).toFixed(2)}€</span>
-                            <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
+                            <button onclick="supprimerItem(${index})" class="text-red-400 hover:text-red-600 p-1"><i class="fas fa-times"></i></button>
                         </div>
                     </div>`;
                 }).join('');
@@ -191,94 +223,140 @@
             document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
         }
 
-        // --- NOUVELLE FONCTION DE CONFIRMATION ---
-    ```javascript
-window.confirmerReservation = async () => {
+        // --- NOUVELLE FONCTION DE CONFIRMATION CORRIGÉE ---
+        window.confirmerReservation = async () => {
+            const btn = document.getElementById('btnSubmit');
+            const nom = document.getElementById('nom_loueur').value.trim();
+            const email = document.getElementById('email_loueur').value.trim();
+            const tel = document.getElementById('tel_loueur').value.trim();
+            const dateDebut = document.getElementById('date_debut').value;
+            const dateFin = document.getElementById('date_fin').value;
 
-    const btn = document.getElementById('btnSubmit');
-    const nom = document.getElementById('nom_loueur').value;
+            // Validations de base
+            if (!nom || !email || !tel || !dateDebut || !dateFin) {
+                alert("Veuillez remplir toutes vos informations personnelles et les dates.");
+                return;
+            }
+            if (panier.length === 0) {
+                alert("Votre panier est vide.");
+                return;
+            }
+            if (new Date(dateFin) < new Date(dateDebut)) {
+                alert("La date de fin ne peut pas être avant la date de début.");
+                return;
+            }
 
-    if (!nom || panier.length === 0) {
-        alert("Veuillez remplir votre nom et choisir du matériel.");
-        return;
-    }
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Génération du contrat...';
 
-    btn.disabled = true;
-    btn.innerText = "Génération du contrat...";
+            try {
+                // 1. Remplissage du template PDF caché avec les données
+                document.getElementById('pdf-nom').innerText = nom;
+                document.getElementById('pdf-email').innerText = email;
+                document.getElementById('pdf-tel').innerText = tel;
+                
+                // Formater les dates au format FR (JJ/MM/AAAA)
+                const formatFR = (dateStr) => new Date(dateStr).toLocaleDateString('fr-FR');
+                document.getElementById('pdf-debut').innerText = formatFR(dateDebut);
+                document.getElementById('pdf-fin').innerText = formatFR(dateFin);
+                
+                document.getElementById('pdf-total').innerText = document.getElementById('totalPrix').innerText;
+                document.getElementById('pdf-caution').innerText = document.getElementById('totalCaution').innerText;
+                
+                document.getElementById('pdf-items').innerHTML = panier.map(item => 
+                    `<li><strong>${item.qty}x</strong> ${item.nom} - ${(item.qty * item.prix).toFixed(2)}€</li>`
+                ).join('');
 
-    try {
+                await new Promise(r => setTimeout(r, 100)); // Petit délai pour le rendu du DOM
 
-        // 🔒 attendre que le contrat soit bien rendu
-        await new Promise(r => setTimeout(r, 400));
+                const element = document.getElementById('pdf-render-zone');
+                const clone = element.cloneNode(true);
+                // On s'assure que le clone est visible pour le rendu
+                clone.style.position = "static"; 
+                clone.style.display = "block";
 
-        const element = document.getElementById('pdf-render-zone');
+                const opt = { 
+                    margin: 10,
+                    filename: `Contrat_${nom.replace(/\s+/g, '_')}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
 
-        // 🔥 CLONE pour éviter bug DOM
-        const clone = element.cloneNode(true);
+                const worker = html2pdf().set(opt).from(clone);
+                const pdfBlob = await worker.output('blob');
 
-        const opt = { 
-            margin: 10,
-            filename: `Contrat_${nom}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                // Téléchargement pour l'utilisateur
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = opt.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Envoi en cours...';
+
+                // Upload vers Supabase Storage
+                const path = `contrats/${Date.now()}_${nom.replace(/\s+/g, '_')}.pdf`;
+                await supabase.storage.from('contrats').upload(path, pdfBlob, { contentType: 'application/pdf' });
+                const { data } = supabase.storage.from('contrats').getPublicUrl(path);
+
+                // Envoi EmailJS
+                await emailjs.send('service_63g35od', 'template_gb5d2wt', {
+                    nom_loueur: nom,
+                    email_destinataire: email,
+                    lien_pdf: data.publicUrl
+                });
+
+                // --- UTILISATION DU CODE ORPHELIN : Création de l'UI de succès ---
+                const resData = {
+                    nom_loueur: nom,
+                    date_debut: dateDebut,
+                    date_fin: dateFin,
+                    articles: panier
+                };
+                const calLink = creerLienGoogleCalendar(resData);
+                
+                // Remplacer le contenu du panneau par un message de succès
+                const asideDiv = document.querySelector('#asidePanel > div');
+                asideDiv.innerHTML = `
+                    <div class="text-center py-6">
+                        <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Réservation réussie !</h2>
+                        <p class="text-gray-600 mb-6 text-sm">Votre contrat a été téléchargé et envoyé par email.</p>
+                        
+                        <a href="${calLink}" target="_blank" class="block w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow transition mb-4">
+                            <i class="far fa-calendar-plus mr-2"></i> Ajouter à mon Agenda
+                        </a>
+                        
+                        <button onclick="window.location.reload()" class="text-indigo-600 underline text-sm mt-4 hover:text-indigo-800">
+                            Faire une nouvelle réservation
+                        </button>
+                    </div>
+                `;
+
+            } catch (e) {
+                console.error(e);
+                alert("Une erreur est survenue lors du processus. Veuillez réessayer.");
+                btn.disabled = false;
+                btn.innerText = "Confirmer la réservation";
+            }
         };
-
-        // ✅ UNE SEULE GÉNÉRATION
-        const worker = html2pdf().set(opt).from(clone);
-
-        const pdfBlob = await worker.output('blob');
-
-        // 📥 téléchargement
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Contrat_${nom}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-
-        btn.innerText = "Envoi en cours...";
-
-        // ☁️ upload
-        const path = `contrats/${Date.now()}_${nom}.pdf`;
-
-        await supabase.storage
-            .from('contrats')
-            .upload(path, pdfBlob, { contentType: 'application/pdf' });
-
-        const { data } = supabase
-            .storage
-            .from('contrats')
-            .getPublicUrl(path);
-
-        // 📧 email
-        await emailjs.send('service_63g35od', 'template_gb5d2wt', {
-            nom_loueur: nom,
-            email_destinataire: document.getElementById('email_loueur').value,
-            lien_pdf: data.publicUrl
-        });
-
-        alert("Réservation réussie !");
-        window.location.reload();
-
-    } catch (e) {
-        console.error(e);
-        alert("Erreur lors de la génération du PDF");
-        btn.disabled = false;
-        btn.innerText = "Confirmer & Télécharger le contrat";
-    }
-};
-```
 
         function creerLienGoogleCalendar(res) {
             const dDebut = res.date_debut.replace(/-/g, '');
-            const dFin = res.date_fin.replace(/-/g, '');
-            const titre = encodeURIComponent(`[LOC APE] ${res.nom_loueur}`);
+            // Google calendar prend le lendemain pour la fin d'un evenement all-day
+            const endDate = new Date(res.date_fin);
+            endDate.setDate(endDate.getDate() + 1);
+            const dFin = endDate.toISOString().split('T')[0].replace(/-/g, '');
+            
+            const titre = encodeURIComponent(`[LOC APE] Location ${res.nom_loueur}`);
             const list = res.articles.map(a => `- ${a.qty}x ${a.nom}`).join('\n');
-            const desc = encodeURIComponent(`Loueur : ${res.nom_loueur}\nMatériel :\n${list}`);
+            const desc = encodeURIComponent(`Loueur : ${res.nom_loueur}\nMatériel loué :\n${list}`);
             return `https://www.google.com/calendar/render?action=TEMPLATE&text=${titre}&dates=${dDebut}/${dFin}&details=${desc}&sf=true&output=xml`;
         }
 
+        // Lancement au chargement
         fetchMateriels();
     </script>
 </body>
