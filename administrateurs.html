@@ -27,26 +27,30 @@
     // INSEREZ LE BLOC ICI (JUSTE APRÈS ADMIN_CODE)
     // ==========================================
     window.modifierStatut = async (id, nouveauStatut) => {
-        const adminQuiValide = sessionStorage.getItem('admin_name'); 
-        if (!adminQuiValide) {
-            alert("Erreur d'identification. Veuillez rafraîchir la page.");
-            return;
-        }
+    // On appelle identifierAdmin pour s'assurer qu'on a le nom de la personne
+    const adminQuiValide = identifierAdmin(); 
+    
+    if (!adminQuiValide) {
+        alert("Action annulée : Identification requise.");
+        return;
+    }
 
-        const { error } = await supabase
-            .from('reservations')
-            .update({ 
-                statut: nouveauStatut,
-                valide_par: adminQuiValide 
-            })
-            .eq('id', id);
+    const { error } = await supabase
+        .from('reservations')
+        .update({ 
+            statut: nouveauStatut,
+            valide_par: adminQuiValide 
+        })
+        .eq('id', id);
 
-        if (error) {
-            alert("Erreur Supabase : " + error.message);
-        } else {
-            init(); // Relance le chargement des données pour actualiser l'affichage
-        }
-    };
+    if (error) {
+        alert("Erreur Supabase : " + error.message);
+    } else {
+        // Optionnel : un petit message de confirmation
+        console.log("Statut mis à jour !");
+        init(); // Recharge la liste et le calendrier
+    }
+};
         // 1. FONCTION DE SÉCURITÉ ET D'IDENTIFICATION
         function identifierAdmin() {
             let adminName = sessionStorage.getItem('admin_name');
@@ -70,23 +74,7 @@
             return adminName;
         }
 
-        // 2. MODIFICATION DU STATUT AVEC TRAÇABILITÉ
-        window.modifierStatut = async (id, nouveauStatut) => {
-            const adminQuiValide = identifierAdmin();
-            if (!adminQuiValide) return;
-
-            const { error } = await supabase
-                .from('reservations')
-                .update({ 
-                    statut: nouveauStatut,
-                    valide_par: adminQuiValide // Enregistre qui a cliqué
-                })
-                .eq('id', id);
-
-            if (error) alert("Erreur lors de la mise à jour");
-            else init(); // Recharge les données sans rafraîchir toute la page
-        };
-
+       
         async function init() {
             if (!identifierAdmin()) return; // Vérifie l'accès au chargement[cite: 2]
 
