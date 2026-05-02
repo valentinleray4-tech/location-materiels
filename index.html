@@ -131,17 +131,42 @@ emailjs.init("nOykns8pFjxSLoS1s");
         let itemsData = [];
 
         async function fetchMateriels() {
-            try {
-                const { data, error } = await supabase.from('materiels').select('*');
-                if (error) throw error;
-                itemsData = data;
-                renderInventory();
-                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté à Supabase';
-            } catch (err) {
-                console.error(err);
-                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur de connexion';
-            }
-        }
+          try {
+    // 1. Remplissage des données (Nom, Email, etc.)
+    document.getElementById('pdf-nom').innerText = nom;
+    document.getElementById('pdf-email').innerText = email;
+    document.getElementById('pdf-tel').innerText = tel;
+    
+    const formatFR = (dateStr) => new Date(dateStr).toLocaleDateString('fr-FR');
+    document.getElementById('pdf-debut').innerText = formatFR(dateDebut);
+    document.getElementById('pdf-fin').innerText = formatFR(dateFin);
+    document.getElementById('pdf-total').innerText = document.getElementById('totalPrix').innerText;
+    document.getElementById('pdf-caution').innerText = document.getElementById('totalCaution').innerText;
+    document.getElementById('pdf-items').innerHTML = panier.map(item => 
+        `<li><strong>${item.qty}x</strong> ${item.nom} - ${(item.qty * item.prix).toFixed(2)}€</li>`
+    ).join('');
+
+    // On attend un court instant pour laisser le navigateur dessiner le texte
+    await new Promise(r => setTimeout(r, 500));
+
+    const element = document.getElementById('pdf-render-zone');
+    
+    const opt = { 
+        margin: 10,
+        filename: `Contrat_${nom.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true,
+            logging: false // Désactive les logs dans la console
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // ACTION : On génère directement depuis l'élément d'origine au lieu du clone
+    // car html2pdf gère déjà la visibilité en interne
+    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
 
         function renderInventory() {
             const container = document.getElementById('inventory');
