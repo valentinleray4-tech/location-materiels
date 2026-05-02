@@ -149,7 +149,7 @@ async function renderInventory() {
     const dateFin = document.getElementById('date_fin').value;
     const datesRemplies = dateDebut !== "" && dateFin !== "";
 
-    // On utilise Promise.all pour calculer tous les stocks en parallèle avant d'afficher
+    // Calcul des stocks pour chaque item
     const itemsWithStock = await Promise.all(itemsData.map(async (item) => {
         const stockDispo = datesRemplies 
             ? await calculerStockDisponible(item.id, item.stock_total) 
@@ -157,17 +157,35 @@ async function renderInventory() {
         return { ...item, stockDispo };
     }));
 
-    container.innerHTML = itemsWithStock.map(item => `
-        <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
+    container.innerHTML = itemsWithStock.map(item => {
+        // Détermination de l'état de l'article
+        const estIndisponible = datesRemplies && item.stockDispo <= 0;
+        
+        // Choix de la couleur et du texte du badge principal
+        let badgeColor = "bg-green-500";
+        let badgeText = `STOCK TOTAL : ${item.stock_total}`;
+        
+        if (datesRemplies) {
+            if (estIndisponible) {
+                badgeColor = "bg-red-600";
+                badgeText = "INDISPONIBLE";
+            } else {
+                badgeColor = "bg-blue-600";
+                badgeText = `DISPONIBLE : ${item.stockDispo}`;
+            }
+        }
+
+        return `
+        <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm ${estIndisponible ? 'opacity-75' : ''}">
             <div class="h-40 bg-gray-100 relative">
-                <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover ${estIndisponible ? 'grayscale' : ''}">
                 
-                <!-- Zone des Badges en haut à droite -->
+                <!-- Zone des Badges -->
                 <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
-                    <span class="${datesRemplies ? 'bg-blue-600' : 'bg-green-500'} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-sm">
-                        ${datesRemplies ? 'DISPONIBLE : ' + item.stockDispo : 'STOCK TOTAL : ' + item.stock_total}
+                    <span class="${badgeColor} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-md transition-colors">
+                        ${badgeText}
                     </span>
-                    ${datesRemplies ? `
+                    ${datesRemplies && !estIndisponible ? `
                         <span class="bg-blue-100 text-blue-700 text-[9px] px-2 py-0.5 rounded font-bold uppercase border border-blue-200">
                             <i class="fas fa-calendar-check"></i> Dispo vérifiée
                         </span>
@@ -179,20 +197,24 @@ async function renderInventory() {
                     <h3 class="font-bold text-gray-800">${item.nom}</h3>
                     <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
                 </div>
-                <div class="mt-4 flex gap-2 ${!datesRemplies ? 'opacity-50' : ''}">
+                <div class="mt-4 flex gap-2">
                     <input type="number" id="qty-${item.id}" min="1" max="${item.stockDispo}" value="1" 
-                        ${!datesRemplies || item.stockDispo <= 0 ? 'disabled' : ''} 
-                        class="w-12 border rounded text-center text-sm">
+                        ${!datesRemplies || estIndisponible ? 'disabled' : ''} 
+                        class="w-12 border rounded text-center text-sm ${estIndisponible ? 'bg-gray-100' : ''}">
                     
                     <button onclick="ajouterAuPanier(${item.id})" 
-                        ${!datesRemplies || item.stockDispo <= 0 ? 'disabled' : ''} 
-                        class="flex-1 ${datesRemplies && item.stockDispo > 0 ? 'bg-indigo-600' : 'bg-gray-400 cursor-not-allowed'} text-white text-xs py-2 rounded font-bold">
-                        ${!datesRemplies ? 'Saisir dates' : (item.stockDispo > 0 ? 'Ajouter' : 'Épuisé')}
+                        ${!datesRemplies || estIndisponible ? 'disabled' : ''} 
+                        class="flex-1 text-white text-xs py-2 rounded font-bold transition-colors ${
+                            !datesRemplies ? 'bg-gray-400 cursor-not-allowed' : 
+                            (estIndisponible ? 'bg-red-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700')
+                        }">
+                        ${!datesRemplies ? 'Saisir dates' : (estIndisponible ? 'Indisponible' : 'Ajouter')}
                     </button>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 window.ajouterAuPanier = async (id) => {
