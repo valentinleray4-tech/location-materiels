@@ -91,12 +91,13 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZmt6bGdxcnl4aGphb3ZpZHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzUzNzAsImV4cCI6MjA5MzA1MTM3MH0.PO7vsGf8IfgnhRvegxfrCMDrYU5qhcBW8C789RCq0i8'
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-    // INITIALISATION EMAILJS - REMPLACE PAR TA CLÉ PUBLIQUE (obligatoire pour corriger l'erreur 400)
+    // INITIALISATION EMAILJS - METS TA CLÉ PUBLIQUE ICI
     emailjs.init("TON_ID_PUBLIC_ICI"); 
 
     let panier = [];
     let itemsData = [];
 
+    // Chargement de l'inventaire
     async function fetchMateriels() {
         try {
             const { data, error } = await supabase.from('materiels').select('*');
@@ -172,7 +173,7 @@
         if (!info.nom || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations.");
 
         btn.disabled = true;
-        btn.innerText = "Traitement en cours...";
+        btn.innerText = "Génération et envoi en cours...";
 
         const docDefinition = {
             pageSize: 'A4',
@@ -243,32 +244,34 @@
         try {
             const pdfDocGenerator = pdfMake.createPdf(docDefinition);
 
-            // GESTION STORAGE SUPABASE
             pdfDocGenerator.getBlob(async (blob) => {
                 const fileName = `contrat_${Date.now()}_${info.nom.replace(/\s/g, '_')}.pdf`;
                 
-                const { data, error: uploadError } = await supabase.storage
+                // 1. Upload Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('contrats')
                     .upload(fileName, blob, { contentType: 'application/pdf' });
 
                 if (uploadError) throw uploadError;
 
-                // ENVOI EMAILJS (Variables de image_965f99.png)[cite: 1]
+                // 2. Envoi EmailJS (Variables de image_965f99.png)[cite: 1]
                 await emailjs.send('service_63g35od', 'template_gb5d2wt', {
                     nom_loueur: info.nom,
                     email_destinataire: info.email,
-                    message_html: `Nouvelle réservation de ${info.nom}. <br>Total à régler : ${info.totalP} <br>Caution : ${info.totalC}`
+                    message_html: `Nouvelle réservation de ${info.nom}. <br>Total : ${info.totalP} <br>Caution : ${info.totalC}`
                 });
 
+                // 3. Téléchargement final
                 pdfDocGenerator.download(fileName);
-                alert("Réservation réussie ! Le contrat est téléchargé et l'école a été notifiée.");
+                alert("Réservation réussie ! Le contrat est enregistré et l'email envoyé.");
                 window.location.reload();
             });
 
         } catch (err) {
-            console.error(err);
-            alert("Une erreur est survenue lors de l'envoi.");
+            console.error("Erreur détaillée:", err);
+            alert("Erreur technique. Vérifie que le bucket 'contrats' existe dans Supabase et que ta clé EmailJS est correcte.");
             btn.disabled = false;
+            btn.innerText = "Réessayer la réservation";
         }
     };
 
