@@ -261,39 +261,42 @@ pdfDocGenerator.getBlob(async (blob) => {
         .from('contrats')
         .getPublicUrl(fileName);
     
-    const publicUrl = urlData.publicUrl;
+   const publicUrl = urlData.publicUrl;
 
-    // 3. --- NOUVEAU : ENREGISTREMENT DANS LA TABLE RESERVATIONS ---
+    // 1. Préparation de la liste d'articles pour le mail (HTML)
+    const listeArticlesHtml = panier.map(i => `<li>${i.qty}x ${i.nom}</li>`).join('');
+
+    // 2. ENREGISTREMENT DANS LA TABLE RESERVATIONS
     const { error: dbError } = await supabase
         .from('reservations')
         .insert([{
             nom_loueur: info.nom,
-            email: info.email,
-            telephone: info.tel,
+            email: info.email,       // Doit correspondre à ta colonne 'email'
+            telephone: info.tel,     // Doit correspondre à ta colonne 'telephone'
             date_debut: info.debut,
             date_fin: info.fin,
-            total_prix: parseFloat(info.totalP),
+            total_prix: parseFloat(info.totalP), 
             total_caution: parseFloat(info.totalC),
-            pdf_url: publicUrl, // Ton lien est enregistré ici
+            pdf_url: publicUrl,
+            articles: panier,        // On envoie directement l'objet JSON ici
             statut: 'En attente'
         }]);
 
-    if (dbError) {
-        console.error("Erreur base de données:", dbError);
-        alert("Erreur base de données : " + dbError.message); // <--- AJOUTE CECI
-    }
-        // On continue quand même pour le mail, mais on prévient dans la console
-    
+    if (dbError) console.error("Erreur DB:", dbError);
 
-    // 4. ENVOI EMAILJS (Template image_965f99.png)
+    // 3. ENVOI DU MAIL AVEC LE RÉCAPITULATIF
     await emailjs.send('service_63g35od', 'template_gb5d2wt', {
         nom_loueur: info.nom,
         email_destinataire: info.email,
-        message_html: `Nouvelle réservation de ${info.nom}.<br>
-                       Total : ${info.totalP} | Caution : ${info.totalC}<br><br>
-                       Lien du contrat : <a href="${publicUrl}" target="_blank">Cliquez ici pour voir le PDF</a>`
+        // On remplit la variable message_html avec la liste
+        message_html: `
+            <p>Nouvelle réservation de <strong>${info.nom}</strong>.</p>
+            <p><strong>Articles loués :</strong></p>
+            <ul>${listeArticlesHtml}</ul>
+            <p><strong>Total :</strong> ${info.totalP} (Caution: ${info.totalC})</p>
+            <p>Lien du contrat : <a href="${publicUrl}" target="_blank">Cliquez ici pour voir le PDF</a></p>
+        `
     });
-
     pdfDocGenerator.download(fileName);
     alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
     window.location.reload();
