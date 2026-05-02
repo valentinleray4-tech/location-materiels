@@ -1,0 +1,56 @@
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Admin - Réservations</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabase = createClient(
+    'https://uofkzlgqryxhjaovidqf.supabase.co',
+    'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
+);
+
+async function loadReservations() {
+
+    const { data } = await supabase
+        .from('reservations')
+        .select('*')
+        .order('date_debut', { ascending: true });
+
+    const container = document.getElementById('list');
+
+    container.innerHTML = data.map(r => `
+        <div class="bg-white p-4 rounded shadow">
+            <div class="flex justify-between">
+                <strong>${r.nom_loueur}</strong>
+                <span>${r.date_debut} → ${r.date_fin}</span>
+            </div>
+
+            <div class="text-sm text-gray-600 mt-2">
+                ${r.articles.map(a => `${a.qty}x ${a.nom}`).join('<br>')}
+            </div>
+
+            <div class="mt-2 font-bold text-indigo-600">
+                ${r.total_prix} €
+            </div>
+        </div>
+    `).join('');
+}
+
+window.onload = loadReservations;
+</script>
+</head>
+
+<body class="bg-gray-100 p-6">
+
+<h1 class="text-2xl font-bold mb-6">📊 Réservations</h1>
+
+<div id="list" class="space-y-4"></div>
+
+</body>
+</html>
+```
