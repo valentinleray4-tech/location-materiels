@@ -283,7 +283,7 @@ pdfDocGenerator.getBlob(async (blob) => {
         alert("Erreur base de données : " + dbError.message); // <--- AJOUTE CECI
     }
         // On continue quand même pour le mail, mais on prévient dans la console
-    }
+    
 
     // 4. ENVOI EMAILJS (Template image_965f99.png)
     await emailjs.send('service_63g35od', 'template_gb5d2wt', {
