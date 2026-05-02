@@ -13,33 +13,77 @@
 <body class="bg-gray-100 min-h-screen relative">
 
     <!-- ZONE CACHÉE POUR LA GÉNÉRATION DU PDF -->
-    <div id="pdf-render-zone" style="position: absolute; top: -9999px; left: -9999px; width: 800px; padding: 40px; background: white; color: black; font-family: sans-serif;">
-        <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px;">
-            <h1 style="font-size: 28px; font-weight: bold; color: #4f46e5;">Contrat de Location</h1>
-            <p style="font-size: 18px; color: #6b7280;">Loc'APEL école St Anne-Casson</p>
-        </div>
-        
-        <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; background: #f3f4f6; padding: 10px;">Informations du loueur</h2>
-        <table style="width: 100%; margin-bottom: 30px; text-align: left;">
-            <tr><td style="padding: 5px 0;"><strong>Nom & Prénom :</strong></td><td id="pdf-nom"></td></tr>
-            <tr><td style="padding: 5px 0;"><strong>Email :</strong></td><td id="pdf-email"></td></tr>
-            <tr><td style="padding: 5px 0;"><strong>Téléphone :</strong></td><td id="pdf-tel"></td></tr>
-            <tr><td style="padding: 5px 0;"><strong>Période :</strong></td><td>Du <span id="pdf-debut"></span> au <span id="pdf-fin"></span></td></tr>
-        </table>
-
-        <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; background: #f3f4f6; padding: 10px;">Matériel loué</h2>
-        <ul id="pdf-items" style="margin-bottom: 30px; line-height: 1.8;"></ul>
-
-        <div style="background: #eef2ff; padding: 20px; border-radius: 8px;">
-            <p style="font-size: 18px;"><strong>Coût total de la location :</strong> <span id="pdf-total" style="color: #4f46e5; font-weight: bold;"></span></p>
-            <p style="font-size: 16px;"><strong>Caution exigée :</strong> <span id="pdf-caution" style="color: #ea580c; font-weight: bold;"></span></p>
-        </div>
-
-        <div style="margin-top: 50px;">
-            <p style="font-style: italic; color: #6b7280; margin-bottom: 80px;">Signature du loueur (précédée de la mention "Lu et approuvé") :</p>
-            <div style="border-bottom: 1px dashed #cbd5e1; width: 300px;"></div>
-        </div>
+<div id="pdf-render-zone" style="position: absolute; top: -9999px; left: -9999px; width: 750px; padding: 30px; background: white; color: black; font-family: Arial, sans-serif; font-size: 12px;">
+    <!-- En-tête -->
+    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">
+        <h1 style="font-size: 18px; margin: 0; font-weight: bold;">CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON</h1>
+        <p style="margin: 5px 0;">OGEC SERVICE LOCATION | 2 Rue du château, 44390 CASSON</p>
+        <p style="margin: 0; font-weight: bold;">location.ecolesteanne@gmail.com</p>
     </div>
+
+    <!-- 1- Dates -->
+    <div style="margin-bottom: 15px;">
+        <h2 style="font-size: 14px; text-decoration: underline; margin-bottom: 5px;">1- Date de Location :</h2>
+        <p><strong>Date de départ :</strong> <span id="pdf-debut"></span> &nbsp;&nbsp;&nbsp; <strong>Date de retour :</strong> <span id="pdf-fin"></span></p>
+    </div>
+
+    <!-- Coordonnées Loueur -->
+    <div style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+        <p><strong>Loueur :</strong> <span id="pdf-nom"></span></p>
+        <p><strong>Tél :</strong> <span id="pdf-tel"></span></p>
+        <p><strong>Mail :</strong> <span id="pdf-email"></span></p>
+    </div>
+
+    <!-- 2- Matériels loués (Tableau) -->
+    <div style="margin-bottom: 15px;">
+        <h2 style="font-size: 14px; text-decoration: underline; margin-bottom: 10px;">2- Matériels loués :</h2>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: #f0f0f0;">
+                    <th style="border: 1px solid black; padding: 5px;">Articles</th>
+                    <th style="border: 1px solid black; padding: 5px;">Quantités</th>
+                    <th style="border: 1px solid black; padding: 5px;">Caution/unités</th>
+                    <th style="border: 1px solid black; padding: 5px;">Prix/unités</th>
+                    <th style="border: 1px solid black; padding: 5px;">Prix Total</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-table-body">
+                <!-- Rempli par le script -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3- Montants -->
+    <div style="margin-bottom: 15px;">
+        <h2 style="font-size: 14px; text-decoration: underline; margin-bottom: 5px;">3- Montant à régler / Caution :</h2>
+        <p><strong>Montant Total à régler :</strong> <span id="pdf-total" style="font-size: 14px; font-weight: bold;"></span></p>
+        <p><strong>Montant chèque de caution :</strong> <span id="pdf-caution" style="font-size: 14px; font-weight: bold;"></span></p>
+    </div>
+
+    <!-- 4- Etat -->
+    <div style="margin-bottom: 15px;">
+        <h2 style="font-size: 14px; text-decoration: underline; margin-bottom: 5px;">4- Etat du matériel :</h2>
+        <p>Remarques / observations : __________________________________________________________________</p>
+    </div>
+
+    <!-- 5- Conditions -->
+    <div style="font-size: 10px; line-height: 1.3; margin-bottom: 20px;">
+        <h2 style="font-size: 14px; text-decoration: underline; margin-bottom: 5px;">5- Conditions :</h2>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>Une caution sera demandée lors de la remise du matériel.</li>
+            <li>La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel.</li>
+            <li>Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu'à sa restitution.</li>
+            <li>Le matériel devra être restitué complet, propre et en bon état.</li>
+        </ul>
+        <p style="margin-top: 10px; font-weight: bold; text-align: center;">CE CONTRAT NE FAIT FOI QU'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L'OGEC</p>
+    </div>
+
+    <!-- Signatures -->
+    <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+        <div style="width: 200px; border-top: 1px solid black; text-align: center; padding-top: 5px;">Signature OGEC :</div>
+        <div style="width: 200px; border-top: 1px solid black; text-align: center; padding-top: 5px;">Signature loueur :</div>
+    </div>
+</div>
     <!-- FIN ZONE PDF -->
 
     <header class="bg-indigo-700 text-white shadow-md p-6">
