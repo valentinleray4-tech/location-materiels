@@ -35,65 +35,66 @@
 </div>
 </div>
 
-<aside class="space-y-6">
-<div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
-<h2 class="text-xl font-bold mb-4">Récapitulatif</h2>
+<<aside class="space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
+        <h2 class="text-xl font-bold mb-4">Récapitulatif</h2>
 
-<div id="panierList" class="space-y-3 mb-6 max-h-60 overflow-y-auto border-b pb-4">
-<p class="text-gray-400 italic text-center">Aucun article sélectionné</p>
-</div>
+        <!-- Liste du panier -->
+        <div id="panierList" class="space-y-3 mb-6 max-h-60 overflow-y-auto border-b pb-4">
+            <p class="text-gray-400 italic text-center">Aucun article sélectionné</p>
+        </div>
 
-<div class="space-y-2 mb-6">
-<div class="flex justify-between text-gray-600">
-<span>Total Location :</span>
-<span id="totalPrix" class="font-bold">0.00 €</span>
-</div>
-<div class="flex justify-between text-orange-600 bg-orange-50 p-2 rounded">
-<span class="text-sm">Caution à prévoir :</span>
-<span id="totalCaution" class="font-bold">0.00 €</span>
-</div>
-</div>
+        <!-- Totaux -->
+        <div class="space-y-2 mb-6">
+            <div class="flex justify-between text-gray-600">
+                <span>Total Location :</span>
+                <span id="totalPrix" class="font-bold">0.00 €</span>
+            </div>
+            <div class="flex justify-between text-orange-600 bg-orange-50 p-2 rounded">
+                <span class="text-sm">Caution à prévoir :</span>
+                <span id="totalCaution" class="font-bold">0.00 €</span>
+            </div>
+        </div>
 
-<div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-<h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
-<i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
-</h3>
-<div class="grid grid-cols-1 gap-3">
-    <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur(obligatoire)" class="p-2 border rounded text-sm w-full outline-none">
-    
-    <!-- Ajout Adresse -->
-    <input type="text" id="adresse_loueur" placeholder="Adresse (N°, rue...)(obligatoire)" class="p-2 border rounded text-sm w-full outline-none">
-    
-    <div class="grid grid-cols-2 gap-2">
-        <input type="text" id="cp_loueur" placeholder="Code Postal(obligatoire)" class="p-2 border rounded text-sm outline-none">
-        <input type="text" id="ville_loueur" placeholder="Ville(obligatoire)" class="p-2 border rounded text-sm outline-none">
+        <!-- Formulaire Infos Loueur -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center">
+                <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
+            </h3>
+            
+            <div class="grid grid-cols-1 gap-3">
+                <input type="text" id="nom_loueur" placeholder="Nom et Prénom (obligatoire)" class="p-2 border rounded text-sm w-full outline-none">
+                <input type="text" id="adresse_loueur" placeholder="Adresse (N°, rue...)" class="p-2 border rounded text-sm w-full outline-none">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="cp_loueur" placeholder="Code Postal" class="p-2 border rounded text-sm outline-none">
+                    <input type="text" id="ville_loueur" placeholder="Ville" class="p-2 border rounded text-sm outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="email" id="email_loueur" placeholder="Email" class="p-2 border rounded text-sm outline-none">
+                    <input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Début</label>
+                        <input type="date" id="date_debut" class="p-2 border rounded text-sm outline-none">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Fin</label>
+                        <input type="date" id="date_fin" class="p-2 border rounded text-sm outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LE BOUTON EST MAINTENANT ICI, BIEN PLACE -->
+        <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
+            Confirmer la réservation
+        </button>
     </div>
-
-    <div class="grid grid-cols-2 gap-2">
-        <input type="email" id="email_loueur" placeholder="Adresse email(obligatoire)" class="p-2 border rounded text-sm outline-none">
-        <input type="tel" id="tel_loueur" placeholder="Téléphone(obligatoire)" class="p-2 border rounded text-sm outline-none">
-    </div>
-    <!-- ... le reste (dates) ne change pas ... -->
-</div>
-<div class="grid grid-cols-2 gap-2">
-<div class="flex flex-col">
-<label class="text-[10px] font-bold text-gray-400 uppercase">Début</label>
-<input type="date" id="date_debut" class="p-2 border rounded text-sm outline-none">
-</div>
-<div class="flex flex-col">
-<label class="text-[10px] font-bold text-gray-400 uppercase">Fin</label>
-<input type="date" id="date_fin" class="p-2 border rounded text-sm outline-none">
-</div>
-</div>
-</div>
-</div>
-
-<button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 shadow-lg transition transform active:scale-95">
-Confirmer la réservation
-</button>
-</div>
 </aside>
-</main>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
