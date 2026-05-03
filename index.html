@@ -396,6 +396,7 @@ fetch(part1 + part2, {
         client: info.nom,
         dates: `du ${info.debut} au ${info.fin}`,
         montant: info.totalP,
+        contrat: publicUrl,
         message: "Une nouvelle demande de location vient d'être déposée sur le site."
     })
 }).catch(err => console.log("Erreur envoi alerte Make:", err));
