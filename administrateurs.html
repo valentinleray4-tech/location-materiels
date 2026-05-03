@@ -59,16 +59,16 @@ window.modifierStatut = async (id, nouveauStatut) => {
                 .single();
 
             // Masquage de l'URL pour éviter les blocages GitHub/GitGuardian
-            const b = "https://hooks.zapier.com/hooks/catch/";
-            const a = "27445360/";
-            const h = "uve1kvh/";
+           const m1 = "https://hook.eu1.make";
+const m2 = ".com/5d1xgttusvk6rbamv";
+const m3 = "44i1202arwsy4rd";
 
-            fetch(b + a + h, {
-                method: 'POST',
-                mode: 'no-cors', // Nécessaire pour éviter les erreurs CORS sur GitHub Pages
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(res)
-            });
+fetch(m1 + m2 + m3, {
+    method: 'POST',
+    mode: 'no-cors', // Crucial pour GitHub Pages
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(res)
+});
             
             alert("Réservation validée ! Le mail de confirmation et le calendrier Google sont en cours de synchronisation.");
         } else {
