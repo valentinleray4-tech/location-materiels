@@ -17,7 +17,7 @@
 <div class="container mx-auto flex justify-between items-center">
 <div>
 <h1 class="text-2xl font-bold">Loc'APEL école St Anne-Casson</h1>
-<p class="text-indigo-100 italic">Réservez, louez, aidez l'école !</p>
+<p class="text-indigo-100 italic">Réservez, louez, amusez vous ! Saisir les dates avant de remplir votre panier (en bas sur mobile) </p>
 </div>
 <div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200">
 <i class="fas fa-database mr-1"></i> Connexion base de données...
@@ -258,7 +258,12 @@ return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rou
 document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
 document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
 }
-
+const genererLienCalendrier = (info) => {
+    const formatDate = (dateStr) => dateStr.replace(/-/g, '');
+    const start = formatDate(info.debut);
+    const end = formatDate(info.fin);
+    return `https://www.google.com/calendar/render?action=TEMPLATE&text=Location+Matériel+Loc'APEL&dates=${start}/${end}&details=Merci+pour+votre+réservation.+Votre+contrat+est+disponible+ici+:+${info.contrat}&location=Ecole+Sainte+Anne,+Casson`;
+};
 window.confirmerReservation = async () => {
 const btn = document.getElementById('btnSubmit');
 const info = {
@@ -285,7 +290,7 @@ content: [
 { text: '\n' },
 {
 columns: [
-{ width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'location.ecolesteanne@gmail.com'], fontSize: 9 },
+{ width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'loc.ecolesteanne@gmail.com'], fontSize: 9 },
 { width: 200, stack: [{ text: info.nom, bold: true }, `Tél : ${info.tel}`, `Mail : ${info.email}`], alignment: 'right', fontSize: 9 }
 ]
 },
@@ -414,7 +419,7 @@ fetch(part1 + part2, {
             <p>Lien du contrat : <a href="${publicUrl}" target="_blank">Cliquez ici pour voir le PDF</a></p>
         `
     });
-    pdfDocGenerator.download(fileName);
+    //pdfDocGenerator.download(fileName);' "FONCTION EN VEILLE"
     alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
     window.location.reload();
 });
