@@ -384,21 +384,22 @@ pdfDocGenerator.getBlob(async (blob) => {
         }]);
 
     if (dbError) console.error("Erreur DB:", dbError);
-// --- DÉBUT ALERTE ADMIN MAKE ---
-    const urlAlerteAdmin = "https://hook.eu1.make.com/https://hook.eu1.make.com/apcapqrfu7fv7rqab0xp428aak6xtu4o"; // <--- METS TA NOUVELLE URL ICI
+// --- DÉBUT ALERTE ADMIN MAKE CORRIGÉ ---
+const part1 = "https://hook.eu1.make.com/";
+const part2 = "apcapqrfu7fv7rqab0xp428aak6xtu4o";
 
-    fetch(urlAlerteAdmin, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            client: info.nom,
-            dates: `du ${info.debut} au ${info.fin}`,
-            montant: info.totalP,
-            message: "Une nouvelle demande de location vient d'être déposée sur le site."
-        })
-    }).catch(err => console.log("Erreur envoi alerte Make:", err));
-    // --- FIN ALERTE ADMIN MAKE ---
+fetch(part1 + part2, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        client: info.nom,
+        dates: `du ${info.debut} au ${info.fin}`,
+        montant: info.totalP,
+        message: "Une nouvelle demande de location vient d'être déposée sur le site."
+    })
+}).catch(err => console.log("Erreur envoi alerte Make:", err));
+// --- FIN ALERTE ADMIN MAKE ---
     // 3. ENVOI DU MAIL AVEC LE RÉCAPITULATIF
     await emailjs.send('service_63g35od', 'template_gb5d2wt', {
         nom_loueur: info.nom,
