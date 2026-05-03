@@ -59,10 +59,21 @@
 <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Informations de location
 </h3>
 <div class="grid grid-cols-1 gap-3">
-<input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur" class="p-2 border rounded text-sm w-full outline-none">
-<div class="grid grid-cols-2 gap-2">
-<input type="email" id="email_loueur" placeholder="Adresse email" class="p-2 border rounded text-sm outline-none">
-<input type="tel" id="tel_loueur" placeholder="Téléphone" class="p-2 border rounded text-sm outline-none">
+    <input type="text" id="nom_loueur" placeholder="Nom et Prénom du loueur(obligatoire)" class="p-2 border rounded text-sm w-full outline-none">
+    
+    <!-- Ajout Adresse -->
+    <input type="text" id="adresse_loueur" placeholder="Adresse (N°, rue...)(obligatoire)" class="p-2 border rounded text-sm w-full outline-none">
+    
+    <div class="grid grid-cols-2 gap-2">
+        <input type="text" id="cp_loueur" placeholder="Code Postal(obligatoire)" class="p-2 border rounded text-sm outline-none">
+        <input type="text" id="ville_loueur" placeholder="Ville(obligatoire)" class="p-2 border rounded text-sm outline-none">
+    </div>
+
+    <div class="grid grid-cols-2 gap-2">
+        <input type="email" id="email_loueur" placeholder="Adresse email(obligatoire)" class="p-2 border rounded text-sm outline-none">
+        <input type="tel" id="tel_loueur" placeholder="Téléphone(obligatoire)" class="p-2 border rounded text-sm outline-none">
+    </div>
+    <!-- ... le reste (dates) ne change pas ... -->
 </div>
 <div class="grid grid-cols-2 gap-2">
 <div class="flex flex-col">
@@ -219,9 +230,12 @@ async function renderInventory() {
 
 window.ajouterAuPanier = async (id) => {
     const item = itemsData.find(i => i.id === id);
-    const qtyDemandee = parseInt(document.getElementById(`qty-${id}`).value);
+    const qtyInput = document.getElementById(`qty-${id}`);
+    const qtyDemandee = parseInt(qtyInput.value);
+    // On cible le bouton précis qui a été cliqué
+    const btn = document.querySelector(`button[onclick="ajouterAuPanier(${id})"]`);
     
-    // VERIFICATION DYNAMIQUE AVANT AJOUT
+    // 1. VERIFICATION DYNAMIQUE DU STOCK (Ta logique actuelle)
     const stockReel = await calculerStockDisponible(id, item.stock_total);
 
     if (qtyDemandee > stockReel) {
@@ -239,9 +253,32 @@ window.ajouterAuPanier = async (id) => {
     } else {
         panier.push({ ...item, qty: qtyDemandee });
     }
+    
+    // 2. MISE À JOUR DU PANIER CACHÉ (En bas sur mobile)
     majPanier();
-};
 
+    // 3. EFFET VISUEL (Feedback pour l'utilisateur)
+    if (btn) {
+        const originalText = btn.innerHTML;
+        const originalClasses = btn.className;
+
+        // On change l'apparence : Vert + Coche
+        btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
+        // On retire les classes de couleur bleu/indigo de Tailwind pour mettre du vert
+        btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        btn.classList.add('bg-green-500');
+
+        // Retour à l'état initial après 2 secondes
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('bg-green-500');
+            btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        }, 2000);
+    }
+    
+    // Petit retour haptique (vibration) pour mobile si supporté
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
+};
 window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
 
 function majPanier() {
@@ -267,16 +304,20 @@ const genererLienCalendrier = (info) => {
 window.confirmerReservation = async () => {
 const btn = document.getElementById('btnSubmit');
 const info = {
-nom: document.getElementById('nom_loueur').value,
-email: document.getElementById('email_loueur').value,
-tel: document.getElementById('tel_loueur').value,
-debut: document.getElementById('date_debut').value,
-fin: document.getElementById('date_fin').value,
-totalP: document.getElementById('totalPrix').innerText,
-totalC: document.getElementById('totalCaution').innerText
+    nom: document.getElementById('nom_loueur').value,
+    adresse: document.getElementById('adresse_loueur').value, // Nouveau
+    cp: document.getElementById('cp_loueur').value,           // Nouveau
+    ville: document.getElementById('ville_loueur').value,     // Nouveau
+    email: document.getElementById('email_loueur').value,
+    tel: document.getElementById('tel_loueur').value,
+    debut: document.getElementById('date_debut').value,
+    fin: document.getElementById('date_fin').value,
+    totalP: document.getElementById('totalPrix').innerText,
+    totalC: document.getElementById('totalCaution').innerText
 };
 
-if (!info.nom || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations.");
+// Pensez à mettre à jour la vérification si vous voulez que l'adresse soit obligatoire
+if (!info.nom || !info.adresse || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations (Nom, Adresse, Email).");
 
 btn.disabled = true;
 btn.innerText = "Génération et envoi en cours...";
@@ -289,10 +330,22 @@ content: [
 { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] },
 { text: '\n' },
 {
-columns: [
-{ width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'loc.ecolesteanne@gmail.com'], fontSize: 9 },
-{ width: 200, stack: [{ text: info.nom, bold: true }, `Tél : ${info.tel}`, `Mail : ${info.email}`], alignment: 'right', fontSize: 9 }
-]
+{
+    columns: [
+        { width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'loc.ecolesteanne@gmail.com'], fontSize: 9 },
+        { 
+            width: 200, 
+            stack: [
+                { text: info.nom, bold: true }, 
+                info.adresse, 
+                `${info.cp} ${info.ville}`, 
+                `Tél : ${info.tel}`, 
+                `Mail : ${info.email}`
+            ], 
+            alignment: 'right', 
+            fontSize: 9 
+        }
+    ]
 },
 { text: '\n1- Date de Location:', style: 'sectionHeader' },
 { text: `Date de départ : ${info.debut}       Date de retour : ${info.fin}`, margin: [10, 5, 0, 15], fontSize: 10 },
