@@ -360,13 +360,14 @@ window.confirmerReservation = async () => {
 const btn = document.getElementById('btnSubmit');
 const info = {
     nom: document.getElementById('nom_loueur').value,
-    adresse: document.getElementById('adresse_loueur').value, // Nouveau
-    cp: document.getElementById('cp_loueur').value,           // Nouveau
-    ville: document.getElementById('ville_loueur').value,     // Nouveau
+    adresse: document.getElementById('adresse_loueur').value,
+    cp: document.getElementById('cp_loueur').value,
+    ville: document.getElementById('ville_loueur').value,
     email: document.getElementById('email_loueur').value,
     tel: document.getElementById('tel_loueur').value,
-    debut: document.getElementById('date_debut').value,
-    fin: document.getElementById('date_fin').value,
+    // Transformation directe : "2026-05-04" devient ["2026","05","04"] puis ["04","05","2026"] puis "04/05/2026"
+    debut: document.getElementById('date_debut').value.split('-').reverse().join('/'),
+    fin: document.getElementById('date_fin').value.split('-').reverse().join('/'),
     totalP: document.getElementById('totalPrix').innerText,
     totalC: document.getElementById('totalCaution').innerText
 };
@@ -481,15 +482,15 @@ pdfDocGenerator.getBlob(async (blob) => {
     const listeArticlesHtml = panier.map(i => `<li>${i.qty}x ${i.nom}</li>`).join('');
 
     // 2. ENREGISTREMENT DANS LA TABLE RESERVATIONS
-    const { error: dbError } = await supabase
-        .from('reservations')
-        .insert([{
-            nom_loueur: info.nom,
-            email: info.email,       // Doit correspondre à ta colonne 'email'
-            telephone: info.tel,     // Doit correspondre à ta colonne 'telephone'
-            date_debut: info.debut,
-            date_fin: info.fin,
-            total_prix: parseFloat(info.totalP), 
+   const { error: dbError } = await supabase
+    .from('reservations')
+    .insert([{
+        nom_loueur: info.nom,
+        email: info.email,
+        telephone: info.tel,
+        date_debut: dateDebutVal, // <--- Utilise la variable brute ici (AAAA-MM-JJ)
+        date_fin: dateFinVal,     // <--- Utilise la variable brute ici (AAAA-MM-JJ)
+        total_prix: parseFloat(info.totalP) 
             total_caution: parseFloat(info.totalC),
             pdf_url: publicUrl,
             articles: panier,        // On envoie directement l'objet JSON ici
