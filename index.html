@@ -63,17 +63,17 @@
             </h3>
             
             <div class="space-y-2">
-                <input type="text" id="nom_loueur" placeholder="Nom et Prénom" class="p-2 border rounded text-xs w-full outline-none">
+                <input type="text" id="nom_loueur" placeholder="Nom et Prénom(Obligatoire)" class="p-2 border rounded text-xs w-full outline-none">
                 <input type="text" id="adresse_loueur" placeholder="Adresse" class="p-2 border rounded text-xs w-full outline-none">
                 
                 <div class="grid grid-cols-5 gap-2">
-                    <input type="text" id="cp_loueur" placeholder="CP" class="col-span-2 p-2 border rounded text-xs outline-none">
-                    <input type="text" id="ville_loueur" placeholder="Ville" class="col-span-3 p-2 border rounded text-xs outline-none">
+                    <input type="text" id="cp_loueur" placeholder="CP(Obligatoire)" class="col-span-2 p-2 border rounded text-xs outline-none">
+                    <input type="text" id="ville_loueur" placeholder="Ville(Obligatoire)" class="col-span-3 p-2 border rounded text-xs outline-none">
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="email" id="email_loueur" placeholder="Email" class="p-2 border rounded text-xs outline-none">
-                    <input type="tel" id="tel_loueur" placeholder="Tél" class="p-2 border rounded text-xs outline-none">
+                    <input type="email" id="email_loueur" placeholder="Email(Obligatoire)" class="p-2 border rounded text-xs outline-none">
+                    <input type="tel" id="tel_loueur" placeholder="Tél(Obligatoire)" class="p-2 border rounded text-xs outline-none">
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200">
@@ -103,7 +103,23 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // INITIALISATION EMAILJS - METS TA CLÉ PUBLIQUE ICI 
     emailjs.init("nOykns8pFjxSLoS1s"); 
+// 2. LE BLOCAGE DU CALENDRIER (C'est ici le "début du fichier")
+// On le met ici pour qu'il s'exécute dès que la page charge
+const aujourdhui = new Date().toISOString().split('T')[0];
+const inputDebut = document.getElementById('date_debut');
+const inputFin = document.getElementById('date_fin');
 
+if (inputDebut && inputFin) { // Petite sécurité pour vérifier que les champs existent
+    inputDebut.setAttribute('min', aujourdhui);
+    inputFin.setAttribute('min', aujourdhui);
+
+    inputDebut.addEventListener('change', (e) => {
+        inputFin.setAttribute('min', e.target.value);
+        if (inputFin.value && inputFin.value < e.target.value) {
+            inputFin.value = e.target.value;
+        }
+    });
+}
 let panier = [];
 let itemsData = [];
 
@@ -321,6 +337,26 @@ const genererLienCalendrier = (info) => {
     return `https://www.google.com/calendar/render?action=TEMPLATE&text=Location+Matériel+Loc'APEL&dates=${start}/${end}&details=Merci+pour+votre+réservation.+Votre+contrat+est+disponible+ici+:+${info.contrat}&location=Ecole+Sainte+Anne,+Casson`;
 };
 window.confirmerReservation = async () => {
+    // --- NOUVELLES VÉRIFICATIONS À COLLER ICI ---
+    const dateDebutVal = document.getElementById('date_debut').value;
+    const dateFinVal = document.getElementById('date_fin').value;
+    const dateDuJour = new Date().toISOString().split('T')[0];
+
+    if (!dateDebutVal || !dateFinVal) {
+        alert("⚠️ Veuillez saisir les dates de début et de fin.");
+        return; 
+    }
+
+    if (dateDebutVal < dateDuJour) {
+        alert("⚠️ La date de début ne peut pas être passée.");
+        return;
+    }
+
+    if (dateFinVal < dateDebutVal) {
+        alert("⚠️ La date de retour doit être après la date de départ.");
+        return;
+    }
+    // --- FIN DES NOUVELLES VÉRIFICATIONS ---
 const btn = document.getElementById('btnSubmit');
 const info = {
     nom: document.getElementById('nom_loueur').value,
