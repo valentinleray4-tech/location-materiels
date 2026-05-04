@@ -159,7 +159,7 @@ async function renderInventory() {
     const dateFin = document.getElementById('date_fin').value;
     const datesRemplies = dateDebut !== "" && dateFin !== "";
 
-    // Calcul des stocks pour chaque item
+    // 1. Calcul des stocks pour chaque item de manière asynchrone
     const itemsWithStock = await Promise.all(itemsData.map(async (item) => {
         const stockDispo = datesRemplies 
             ? await calculerStockDisponible(item.id, item.stock_total) 
@@ -167,11 +167,11 @@ async function renderInventory() {
         return { ...item, stockDispo };
     }));
 
+    // 2. Génération du HTML
     container.innerHTML = itemsWithStock.map(item => {
-        // Détermination de l'état de l'article
         const estIndisponible = datesRemplies && item.stockDispo <= 0;
         
-        // Choix de la couleur et du texte du badge principal
+        // Définition des couleurs et textes des badges
         let badgeColor = "bg-green-500";
         let badgeText = `STOCK TOTAL : ${item.stock_total}`;
         
@@ -186,13 +186,24 @@ async function renderInventory() {
         }
 
         return `
-        <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm ${estIndisponible ? 'opacity-75' : ''}">
-            <div class="h-40 bg-gray-100 relative">
-                <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover ${estIndisponible ? 'grayscale' : ''}">
+        <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm transition-all hover:shadow-md ${estIndisponible ? 'opacity-75' : ''}">
+            
+            <!-- ZONE IMAGE OPTIMISÉE -->
+            <div class="h-48 bg-gray-50 relative flex items-center justify-center p-4 border-b">
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" 
+                          class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-110 ${estIndisponible ? 'grayscale' : ''}" 
+                          onerror="this.parentElement.innerHTML='<div class=\'text-gray-300 flex flex-col items-center\'><i class=\'fas fa-box-open text-4xl\'></i><span class=\'text-[10px] mt-2\'>Image non dispo</span></div>'">` 
+                    : 
+                    `<div class="text-gray-300 flex flex-col items-center">
+                        <i class="fas fa-image text-4xl"></i>
+                        <span class="text-[10px] mt-2">Aucun visuel</span>
+                     </div>`
+                }
                 
-                <!-- Zone des Badges -->
+                <!-- Zone des Badges (Disponibilité) -->
                 <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
-                    <span class="${badgeColor} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-md transition-colors">
+                    <span class="${badgeColor} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-sm">
                         ${badgeText}
                     </span>
                     ${datesRemplies && !estIndisponible ? `
@@ -202,11 +213,21 @@ async function renderInventory() {
                     ` : ''}
                 </div>
             </div>
+
+            <!-- ZONE INFOS (TITRE, DESCRIPTION, PRIX) -->
             <div class="p-4 flex flex-col justify-between flex-grow">
                 <div>
-                    <h3 class="font-bold text-gray-800">${item.nom}</h3>
-                    <p class="text-indigo-600 font-bold">${item.prix.toFixed(2)} €</p>
+                    <h3 class="font-bold text-gray-800 leading-tight">${item.nom}</h3>
+                    
+                    <!-- Affichage de la description (tronquée à 2 lignes pour l'alignement) -->
+                    <p class="text-gray-500 text-[11px] mt-2 line-clamp-2 italic leading-snug" title="${item.description || ''}">
+                        ${item.description || 'Pas de description détaillée.'}
+                    </p>
+                    
+                    <p class="text-indigo-600 font-bold mt-3 text-lg">${item.prix.toFixed(2)} €</p>
                 </div>
+
+                <!-- ZONE ACTIONS (QUANTITÉ ET BOUTON) -->
                 <div class="mt-4 flex gap-2">
                     <input type="number" id="qty-${item.id}" min="1" max="${item.stockDispo}" value="1" 
                         ${!datesRemplies || estIndisponible ? 'disabled' : ''} 
@@ -214,7 +235,7 @@ async function renderInventory() {
                     
                     <button onclick="ajouterAuPanier(${item.id})" 
                         ${!datesRemplies || estIndisponible ? 'disabled' : ''} 
-                        class="flex-1 text-white text-xs py-2 rounded font-bold transition-colors ${
+                        class="flex-1 text-white text-xs py-2 rounded font-bold transition-all ${
                             !datesRemplies ? 'bg-gray-400 cursor-not-allowed' : 
                             (estIndisponible ? 'bg-red-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700')
                         }">
@@ -226,7 +247,6 @@ async function renderInventory() {
         `;
     }).join('');
 }
-
 window.ajouterAuPanier = async (id) => {
     const item = itemsData.find(i => i.id === id);
     const qtyInput = document.getElementById(`qty-${id}`);
