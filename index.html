@@ -521,7 +521,7 @@ fetch(part1 + part2, {
         email_destinataire: info.email,
         // On remplit la variable message_html avec la liste
         message_html: `
-            <p>Nouvelle réservation de <strong>${info.nom}</strong>.</p>
+            <p>Nouvelle réservation de <strong>${info.nom}</strong> du <strong>${info.debut}</strong> au <strong>${info.fin}</strong> .</p>
             <p><strong>Articles loués :</strong></p>
             <ul>${listeArticlesHtml}</ul>
             <p><strong>Total :</strong> ${info.totalP} (Caution: ${info.totalC})</p>
