@@ -490,7 +490,7 @@ pdfDocGenerator.getBlob(async (blob) => {
         telephone: info.tel,
         date_debut: dateDebutVal, // <--- Utilise la variable brute ici (AAAA-MM-JJ)
         date_fin: dateFinVal,     // <--- Utilise la variable brute ici (AAAA-MM-JJ)
-        total_prix: parseFloat(info.totalP) 
+        total_prix: parseFloat(info.totalP), 
             total_caution: parseFloat(info.totalC),
             pdf_url: publicUrl,
             articles: panier,        // On envoie directement l'objet JSON ici
@@ -528,7 +528,7 @@ fetch(part1 + part2, {
             <p>Lien du contrat : <a href="${publicUrl}" target="_blank">Cliquez ici pour voir le PDF</a></p>
         `
     });
-    //pdfDocGenerator.download(fileName);' "FONCTION EN VEILLE"
+    //pdfDocGenerator.download(fileName); "FONCTION EN VEILLE"
     alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
     window.location.reload();
 });
