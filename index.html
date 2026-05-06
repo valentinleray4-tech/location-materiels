@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Loc'APE - Gestion des Locations</title>
+<title>Location OGEC Ecole sainte anne - Gestion des Locations</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
@@ -88,7 +88,16 @@
                 </div>
             </div>
         </div>
-
+<!-- CASE RGPD -->
+<div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+    <label class="flex items-start cursor-pointer">
+        <input type="checkbox" id="rgpd_consent" class="mt-1 mr-3 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+        <span class="text-[11px] text-gray-700 leading-tight">
+            J'accepte que les données saisies soient utilisées par l'APEL Ste Anne pour la gestion de ma réservation et l'établissement du contrat. 
+            Consultez notre <a href="rgpd.html" target="_blank" class="text-indigo-600 underline">politique de confidentialité</a>.
+        </span>
+    </label>
+</div>
         <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-4 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow shadow-green-200 transition transform active:scale-95 text-sm">
             Confirmer la réservation
         </button>
