@@ -345,6 +345,11 @@ const genererLienCalendrier = (info) => {
     const end = formatDate(info.fin);
     return `https://www.google.com/calendar/render?action=TEMPLATE&text=Location+Matériel+Loc'APEL&dates=${start}/${end}&details=Merci+pour+votre+réservation.+Votre+contrat+est+disponible+ici+:+${info.contrat}&location=Ecole+Sainte+Anne,+Casson`;
 };
+    const rgpdChecked = document.getElementById('rgpd_consent').checked;
+if (!rgpdChecked) {
+    alert("⚠️ Vous devez accepter l'utilisation de vos données pour valider la réservation.");
+    return;
+}
 window.confirmerReservation = async () => {
     // --- NOUVELLES VÉRIFICATIONS À COLLER ICI ---
     const dateDebutVal = document.getElementById('date_debut').value;
