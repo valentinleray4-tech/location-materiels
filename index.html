@@ -482,22 +482,30 @@ pdfDocGenerator.getBlob(async (blob) => {
     const listeArticlesHtml = panier.map(i => `<li>${i.qty}x ${i.nom}</li>`).join('');
 
     // 2. ENREGISTREMENT DANS LA TABLE RESERVATIONS
-   const { error: dbError } = await supabase
-    .from('reservations')
-    .insert([{
+  // --- NOUVEAU BLOC SÉCURISÉ ---
+const responseProxy = await fetch('/.netlify/functions/reserver', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
         nom_loueur: info.nom,
         email: info.email,
         telephone: info.tel,
-        date_debut: dateDebutVal, // <--- Utilise la variable brute ici (AAAA-MM-JJ)
-        date_fin: dateFinVal,     // <--- Utilise la variable brute ici (AAAA-MM-JJ)
+        date_debut: dateDebutVal, 
+        date_fin: dateFinVal,     
         total_prix: parseFloat(info.totalP), 
-            total_caution: parseFloat(info.totalC),
-            pdf_url: publicUrl,
-            articles: panier,        // On envoie directement l'objet JSON ici
-            statut: 'En attente'
-        }]);
+        total_caution: parseFloat(info.totalC),
+        pdf_url: publicUrl,
+        articles: panier,        
+        statut: 'En attente'
+    })
+});
 
-    if (dbError) console.error("Erreur DB:", dbError);
+// Vérification si le proxy a bien travaillé
+if (!responseProxy.ok) {
+    const errorData = await responseProxy.json();
+    throw new Error(errorData.error || "Le serveur sécurisé a refusé l'enregistrement");
+}
+// --- FIN DU NOUVEAU BLOC ---
 // --- DÉBUT ALERTE ADMIN MAKE CORRIGÉ ---
 const part1 = "https://hook.eu1.make.com/";
 const part2 = "apcapqrfu7fv7rqab0xp428aak6xtu4o";
