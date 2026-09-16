@@ -31,7 +31,6 @@ exports.handler = async (event) => {
     return json(400, { error: 'Corps JSON invalide.' });
   }
 
-  // Honeypot anti-bot : le champ doit rester vide.
   if (input.website) return json(400, { error: 'Requête invalide.' });
 
   const nom = cleanText(input.nom_loueur, 120);
@@ -119,13 +118,7 @@ exports.handler = async (event) => {
       const caution = Number(mat.caution_unitaire) || 0;
       totalPrix += wanted.qty * prix;
       totalCaution += wanted.qty * caution;
-      articles.push({
-        id: wanted.id,
-        nom: mat.nom,
-        qty: wanted.qty,
-        prix,
-        caution_unitaire: caution
-      });
+      articles.push({ id: wanted.id, nom: mat.nom, qty: wanted.qty, prix, caution_unitaire: caution });
     }
 
     const safeName = nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -145,9 +138,6 @@ exports.handler = async (event) => {
       .from('reservations')
       .insert([{
         nom_loueur: nom,
-        adresse,
-        cp,
-        ville,
         email,
         telephone,
         date_debut: dateDebut,
@@ -168,6 +158,7 @@ exports.handler = async (event) => {
     const { data: signed } = await supabase.storage
       .from('contrats')
       .createSignedUrl(fileName, 60 * 60 * 24 * 7);
+    const contractUrl = signed?.signedUrl || null;
 
     if (process.env.MAKE_RESERVATION_WEBHOOK) {
       fetch(process.env.MAKE_RESERVATION_WEBHOOK, {
@@ -176,12 +167,16 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           reservation_id: inserted.id,
           client: nom,
+          adresse,
+          cp,
+          ville,
           email,
           telephone,
           dates: `du ${dateDebut} au ${dateFin}`,
           montant: Number(totalPrix.toFixed(2)),
           caution: Number(totalCaution.toFixed(2)),
-          articles
+          articles,
+          contrat: contractUrl
         })
       }).catch(() => {});
     }
@@ -191,7 +186,7 @@ exports.handler = async (event) => {
       reservation_id: inserted.id,
       total_prix: Number(totalPrix.toFixed(2)),
       total_caution: Number(totalCaution.toFixed(2)),
-      contract_url: signed?.signedUrl || null
+      contract_url: contractUrl
     });
   } catch (error) {
     console.error('reserver:', error);
