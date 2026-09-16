@@ -3,566 +3,373 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Location OGEC Ecole sainte anne - Gestion des Locations</title>
+<title>Loc'APEL école Sainte Anne - Location de matériel</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-<!-- AJOUT DE LA BIBLIOTHEQUE EMAILJS -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
-
 <header class="bg-indigo-700 text-white shadow-md p-6">
-<div class="container mx-auto flex justify-between items-center">
-<div>
-<h1 class="text-2xl font-bold">Loc'APEL école St Anne-Casson</h1>
-<p class="text-indigo-100 italic">Réservez, louez, amusez vous ! Saisir les dates avant de remplir votre panier (en bas sur mobile) </p>
-</div>
-<div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200">
-<i class="fas fa-database mr-1"></i> Connexion base de données...
-</div>
-</div>
+  <div class="container mx-auto flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+    <div>
+      <h1 class="text-2xl font-bold">Loc'APEL école St Anne-Casson</h1>
+      <p class="text-indigo-100 italic">Réservez, louez, amusez-vous ! Saisissez vos dates avant de remplir votre panier.</p>
+    </div>
+    <div id="connectionStatus" class="text-xs bg-indigo-800 p-2 rounded text-indigo-200 w-fit">
+      <i class="fas fa-database mr-1"></i> Connexion base de données...
+    </div>
+  </div>
 </header>
 
 <main class="container mx-auto py-8 px-4 grid lg:grid-cols-3 gap-8">
-<div class="lg:col-span-2 space-y-6">
-<div class="bg-white p-6 rounded-xl shadow-sm min-h-[400px]">
-<h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">Inventaire disponible</h2>
-<div class="grid md:grid-cols-2 gap-6" id="inventory">
-<p class="text-gray-400">Chargement du matériel...</p>
-</div>
-</div>
-</div>
-
-<aside class="space-y-6">
-    <div class="bg-white p-5 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
-        <h2 class="text-xl font-bold mb-3">Récapitulatif</h2>
-
-        <!-- Panier compacté -->
-        <div id="panierList" class="space-y-2 mb-4 max-h-40 overflow-y-auto border-b pb-2">
-            <p class="text-gray-400 italic text-center text-sm">Aucun article sélectionné</p>
-        </div>
-
-        <!-- Totaux sur une ligne pour gagner de la place -->
-        <div class="grid grid-cols-2 gap-2 mb-4">
-            <div class="bg-gray-50 p-2 rounded text-center">
-                <span class="text-[10px] text-gray-500 uppercase block">Total</span>
-                <span id="totalPrix" class="font-bold text-sm">0.00 €</span>
-            </div>
-            <div class="bg-orange-50 p-2 rounded text-center">
-                <span class="text-[10px] text-orange-500 uppercase block">Caution</span>
-                <span id="totalCaution" class="font-bold text-sm text-orange-600">0.00 €</span>
-            </div>
-        </div>
-
-        <!-- Formulaire en grille compacte -->
-        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 class="font-bold text-gray-700 mb-2 text-[11px] uppercase flex items-center">
-                <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Vos Informations
-            </h3>
-            
-            <div class="space-y-2">
-                <input type="text" id="nom_loueur" placeholder="Nom et Prénom(Obligatoire)" class="p-2 border rounded text-xs w-full outline-none">
-                <input type="text" id="adresse_loueur" placeholder="Adresse(Obligatoire)" class="p-2 border rounded text-xs w-full outline-none">
-                
-                <div class="grid grid-cols-5 gap-2">
-                    <input type="text" id="cp_loueur" placeholder="CP(Obligatoire)" class="col-span-2 p-2 border rounded text-xs outline-none">
-                    <input type="text" id="ville_loueur" placeholder="Ville(Obligatoire)" class="col-span-3 p-2 border rounded text-xs outline-none">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="email" id="email_loueur" placeholder="Email(Obligatoire)" class="p-2 border rounded text-xs outline-none">
-                    <input type="tel" id="tel_loueur" placeholder="Tél(Obligatoire)" class="p-2 border rounded text-xs outline-none">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200">
-                    <div>
-                        <label class="text-[9px] font-bold text-gray-400 uppercase">Début</label>
-                        <input type="date" id="date_debut" class="w-full p-1 border rounded text-[11px] outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-bold text-gray-400 uppercase">Fin</label>
-                        <input type="date" id="date_fin" class="w-full p-1 border rounded text-[11px] outline-none">
-                    </div>
-                </div>
-            </div>
-        </div>
-<!-- CASE RGPD -->
-<div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-    <label class="flex items-start cursor-pointer">
-        <input type="checkbox" id="rgpd_consent" class="mt-1 mr-3 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-        <span class="text-[11px] text-gray-700 leading-tight">
-            J'accepte que les données saisies soient utilisées par l'APEL Ste Anne pour la gestion de ma réservation et l'établissement du contrat. 
-            Consultez notre <a href="rgpd.html" target="_blank" class="text-indigo-600 underline">politique de confidentialité</a>.
-        </span>
-    </label>
-</div>
-        <button id="btnSubmit" onclick="confirmerReservation()" class="w-full mt-4 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow shadow-green-200 transition transform active:scale-95 text-sm">
-            Confirmer la réservation
-        </button>
+  <section class="lg:col-span-2 space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm min-h-[400px]">
+      <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">Inventaire disponible</h2>
+      <div class="grid md:grid-cols-2 gap-6" id="inventory">
+        <p class="text-gray-400">Chargement du matériel...</p>
+      </div>
     </div>
-</aside>
+  </section>
+
+  <aside class="space-y-6">
+    <div class="bg-white p-5 rounded-xl shadow-lg border-t-4 border-indigo-500 sticky top-6">
+      <h2 class="text-xl font-bold mb-3">Récapitulatif</h2>
+      <div id="panierList" class="space-y-2 mb-4 max-h-40 overflow-y-auto border-b pb-2">
+        <p class="text-gray-400 italic text-center text-sm">Aucun article sélectionné</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <div class="bg-gray-50 p-2 rounded text-center">
+          <span class="text-[10px] text-gray-500 uppercase block">Total</span>
+          <span id="totalPrix" class="font-bold text-sm">0.00 €</span>
+        </div>
+        <div class="bg-orange-50 p-2 rounded text-center">
+          <span class="text-[10px] text-orange-500 uppercase block">Caution</span>
+          <span id="totalCaution" class="font-bold text-sm text-orange-600">0.00 €</span>
+        </div>
+      </div>
+
+      <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <h3 class="font-bold text-gray-700 mb-2 text-[11px] uppercase flex items-center">
+          <i class="fas fa-user-edit mr-2 text-indigo-500"></i> Vos informations
+        </h3>
+        <div class="space-y-2">
+          <input type="text" id="nom_loueur" maxlength="120" placeholder="Nom et prénom (obligatoire)" class="p-2 border rounded text-xs w-full outline-none">
+          <input type="text" id="adresse_loueur" maxlength="180" placeholder="Adresse (obligatoire)" class="p-2 border rounded text-xs w-full outline-none">
+          <div class="grid grid-cols-5 gap-2">
+            <input type="text" id="cp_loueur" maxlength="12" placeholder="CP" class="col-span-2 p-2 border rounded text-xs outline-none">
+            <input type="text" id="ville_loueur" maxlength="120" placeholder="Ville" class="col-span-3 p-2 border rounded text-xs outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="email" id="email_loueur" maxlength="180" placeholder="Email" class="p-2 border rounded text-xs outline-none">
+            <input type="tel" id="tel_loueur" maxlength="40" placeholder="Téléphone" class="p-2 border rounded text-xs outline-none">
+          </div>
+          <div class="hidden" aria-hidden="true">
+            <label>Site web <input type="text" id="website" tabindex="-1" autocomplete="off"></label>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200">
+            <div>
+              <label class="text-[9px] font-bold text-gray-400 uppercase">Début</label>
+              <input type="date" id="date_debut" class="w-full p-1 border rounded text-[11px] outline-none">
+            </div>
+            <div>
+              <label class="text-[9px] font-bold text-gray-400 uppercase">Fin</label>
+              <input type="date" id="date_fin" class="w-full p-1 border rounded text-[11px] outline-none">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+        <label class="flex items-start cursor-pointer">
+          <input type="checkbox" id="rgpd_consent" class="mt-1 mr-3 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+          <span class="text-[11px] text-gray-700 leading-tight">
+            J'accepte que les données saisies soient utilisées par l'APEL Ste Anne pour la gestion de ma réservation et l'établissement du contrat.
+            Consultez notre <a href="rgpd.html" target="_blank" rel="noopener" class="text-indigo-600 underline">politique de confidentialité</a>.
+          </span>
+        </label>
+      </div>
+
+      <button id="btnSubmit" class="w-full mt-4 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow shadow-green-200 transition active:scale-95 text-sm">
+        Confirmer la réservation
+      </button>
+    </div>
+  </aside>
+</main>
+
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const SUPABASE_URL = 'https://uofkzlgqryxhjaovidqf.supabase.co' 
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZmt6bGdxcnl4aGphb3ZpZHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzUzNzAsImV4cCI6MjA5MzA1MTM3MH0.PO7vsGf8IfgnhRvegxfrCMDrYU5qhcBW8C789RCq0i8'
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = createClient(
+  'https://uofkzlgqryxhjaovidqf.supabase.co',
+  'sb_publishable_3yWGD_MoqP-6jHeHbbIM5w_kphGAJ2F'
+);
 
-// INITIALISATION EMAILJS - METS TA CLÉ PUBLIQUE ICI 
-    emailjs.init("nOykns8pFjxSLoS1s"); 
-// 2. LE BLOCAGE DU CALENDRIER (C'est ici le "début du fichier")
-// On le met ici pour qu'il s'exécute dès que la page charge
-const aujourdhui = new Date().toISOString().split('T')[0];
-const inputDebut = document.getElementById('date_debut');
-const inputFin = document.getElementById('date_fin');
-
-if (inputDebut && inputFin) { // Petite sécurité pour vérifier que les champs existent
-    inputDebut.setAttribute('min', aujourdhui);
-    inputFin.setAttribute('min', aujourdhui);
-
-    inputDebut.addEventListener('change', (e) => {
-        inputFin.setAttribute('min', e.target.value);
-        if (inputFin.value && inputFin.value < e.target.value) {
-            inputFin.value = e.target.value;
-        }
-    });
-}
 let panier = [];
 let itemsData = [];
+let disponibilites = {};
+const inventory = document.getElementById('inventory');
+const inputDebut = document.getElementById('date_debut');
+const inputFin = document.getElementById('date_fin');
+const today = new Date().toISOString().slice(0, 10);
+inputDebut.min = today;
+inputFin.min = today;
 
-// Chargement de l'inventaire
-async function fetchMateriels() {
-    try {
-        const { data, error } = await supabase.from('materiels').select('*');
-        if (error) throw error;
-        itemsData = data;
-        
-        // C'est ici que l'on dessine l'inventaire (initialement bloqué)
-        renderInventory(); 
-        
-        document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
-    } catch (err) {
-        document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
-    }
-}
-// Ajoutez ceci juste après la fonction fetchMateriels
-document.getElementById('date_debut').addEventListener('change', renderInventory);
-document.getElementById('date_fin').addEventListener('change', renderInventory);
-    
- async function calculerStockDisponible(materielId, stockTotal) {
-    const debut = document.getElementById('date_debut').value;
-    const fin = document.getElementById('date_fin').value;
+const escapeHtml = (value) => String(value ?? '')
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
 
-    if (!debut || !fin) return stockTotal;
-
-    // On récupère les réservations qui chevauchent ces dates
-    const { data: reservations, error } = await supabase
-        .from('reservations')
-        .select('articles')
-        .lte('date_debut', fin)
-        .gte('date_fin', debut);
-
-    if (error) {
-        console.error("Erreur calcul stock:", error);
-        return stockTotal;
-    }
-
-    // Calcul de la somme déjà réservée
-    let dejaLoue = 0;
-    reservations.forEach(res => {
-        const art = res.articles.find(a => a.id === materielId);
-        if (art) dejaLoue += art.qty;
-    });
-
-    return stockTotal - dejaLoue;
-}   
-async function renderInventory() {
-    const container = document.getElementById('inventory');
-    const dateDebut = document.getElementById('date_debut').value;
-    const dateFin = document.getElementById('date_fin').value;
-    const datesRemplies = dateDebut !== "" && dateFin !== "";
-
-    // 1. Calcul des stocks pour chaque item de manière asynchrone
-    const itemsWithStock = await Promise.all(itemsData.map(async (item) => {
-        const stockDispo = datesRemplies 
-            ? await calculerStockDisponible(item.id, item.stock_total) 
-            : item.stock_total;
-        return { ...item, stockDispo };
-    }));
-
-    // 2. Génération du HTML
-    container.innerHTML = itemsWithStock.map(item => {
-        const estIndisponible = datesRemplies && item.stockDispo <= 0;
-        
-        // Définition des couleurs et textes des badges
-        let badgeColor = "bg-green-500";
-        let badgeText = `STOCK TOTAL : ${item.stock_total}`;
-        
-        if (datesRemplies) {
-            if (estIndisponible) {
-                badgeColor = "bg-red-600";
-                badgeText = "INDISPONIBLE";
-            } else {
-                badgeColor = "bg-blue-600";
-                badgeText = `DISPONIBLE : ${item.stockDispo}`;
-            }
-        }
-
-        return `
-        <div class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm transition-all hover:shadow-md ${estIndisponible ? 'opacity-75' : ''}">
-            
-            <!-- ZONE IMAGE OPTIMISÉE -->
-            <div class="h-48 bg-gray-50 relative flex items-center justify-center p-4 border-b">
-                ${item.image_url ? 
-                    `<img src="${item.image_url}" 
-                          class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-110 ${estIndisponible ? 'grayscale' : ''}" 
-                          onerror="this.parentElement.innerHTML='<div class=\'text-gray-300 flex flex-col items-center\'><i class=\'fas fa-box-open text-4xl\'></i><span class=\'text-[10px] mt-2\'>Image non dispo</span></div>'">` 
-                    : 
-                    `<div class="text-gray-300 flex flex-col items-center">
-                        <i class="fas fa-image text-4xl"></i>
-                        <span class="text-[10px] mt-2">Aucun visuel</span>
-                     </div>`
-                }
-                
-                <!-- Zone des Badges (Disponibilité) -->
-                <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
-                    <span class="${badgeColor} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-sm">
-                        ${badgeText}
-                    </span>
-                    ${datesRemplies && !estIndisponible ? `
-                        <span class="bg-blue-100 text-blue-700 text-[9px] px-2 py-0.5 rounded font-bold uppercase border border-blue-200">
-                            <i class="fas fa-calendar-check"></i> Dispo vérifiée
-                        </span>
-                    ` : ''}
-                </div>
-            </div>
-
-            <!-- ZONE INFOS (TITRE, DESCRIPTION, PRIX) -->
-            <div class="p-4 flex flex-col justify-between flex-grow">
-                <div>
-                    <h3 class="font-bold text-gray-800 leading-tight">${item.nom}</h3>
-                    
-                    <!-- Affichage de la description (tronquée à 2 lignes pour l'alignement) -->
-                    <p class="text-gray-500 text-[11px] mt-2 line-clamp-2 italic leading-snug" title="${item.description || ''}">
-                        ${item.description || 'Pas de description détaillée.'}
-                    </p>
-                    
-                    <p class="text-indigo-600 font-bold mt-3 text-lg">${item.prix.toFixed(2)} €</p>
-                </div>
-
-                <!-- ZONE ACTIONS (QUANTITÉ ET BOUTON) -->
-                <div class="mt-4 flex gap-2">
-                    <input type="number" id="qty-${item.id}" min="1" max="${item.stockDispo}" value="1" 
-                        ${!datesRemplies || estIndisponible ? 'disabled' : ''} 
-                        class="w-12 border rounded text-center text-sm ${estIndisponible ? 'bg-gray-100' : ''}">
-                    
-                    <button onclick="ajouterAuPanier(${item.id})" 
-                        ${!datesRemplies || estIndisponible ? 'disabled' : ''} 
-                        class="flex-1 text-white text-xs py-2 rounded font-bold transition-all ${
-                            !datesRemplies ? 'bg-gray-400 cursor-not-allowed' : 
-                            (estIndisponible ? 'bg-red-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700')
-                        }">
-                        ${!datesRemplies ? 'Saisir dates' : (estIndisponible ? 'Indisponible' : 'Ajouter')}
-                    </button>
-                </div>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-window.ajouterAuPanier = async (id) => {
-    const item = itemsData.find(i => i.id === id);
-    const qtyInput = document.getElementById(`qty-${id}`);
-    const qtyDemandee = parseInt(qtyInput.value);
-    // On cible le bouton précis qui a été cliqué
-    const btn = document.querySelector(`button[onclick="ajouterAuPanier(${id})"]`);
-    
-    // 1. VERIFICATION DYNAMIQUE DU STOCK (Ta logique actuelle)
-    const stockReel = await calculerStockDisponible(id, item.stock_total);
-
-    if (qtyDemandee > stockReel) {
-        alert(`Désolé ! Pour ces dates, il ne reste que ${stockReel} exemplaire(s) de "${item.nom}".`);
-        return;
-    }
-
-    const index = panier.findIndex(p => p.id === id);
-    if (index > -1) {
-        if (panier[index].qty + qtyDemandee > stockReel) {
-            alert("Limite de stock atteinte pour cette période avec vos articles déjà au panier.");
-            return;
-        }
-        panier[index].qty += qtyDemandee;
-    } else {
-        panier.push({ ...item, qty: qtyDemandee });
-    }
-    
-    // 2. MISE À JOUR DU PANIER CACHÉ (En bas sur mobile)
-    majPanier();
-
-    // 3. EFFET VISUEL (Feedback pour l'utilisateur)
-    if (btn) {
-        const originalText = btn.innerHTML;
-        const originalClasses = btn.className;
-
-        // On change l'apparence : Vert + Coche
-        btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
-        // On retire les classes de couleur bleu/indigo de Tailwind pour mettre du vert
-        btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-        btn.classList.add('bg-green-500');
-
-        // Retour à l'état initial après 2 secondes
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.classList.remove('bg-green-500');
-            btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-        }, 2000);
-    }
-    
-    // Petit retour haptique (vibration) pour mobile si supporté
-    if (window.navigator.vibrate) window.navigator.vibrate(50);
+const safeImageUrl = (value) => {
+  try {
+    const url = new URL(String(value || ''));
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+  } catch { return ''; }
 };
-window.supprimerItem = (index) => { panier.splice(index, 1); majPanier(); };
+
+function clearPanierOnDateChange() {
+  if (panier.length) {
+    panier = [];
+    majPanier();
+  }
+}
+
+inputDebut.addEventListener('change', async () => {
+  inputFin.min = inputDebut.value || today;
+  if (inputFin.value && inputFin.value < inputDebut.value) inputFin.value = inputDebut.value;
+  clearPanierOnDateChange();
+  await refreshDisponibilites();
+});
+inputFin.addEventListener('change', async () => {
+  clearPanierOnDateChange();
+  await refreshDisponibilites();
+});
+
+async function fetchMateriels() {
+  try {
+    const { data, error } = await supabase
+      .from('materiels')
+      .select('id, nom, description, prix, caution_unitaire, stock_total, image_url')
+      .order('nom');
+    if (error) throw error;
+    itemsData = data || [];
+    document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-check-circle text-green-400"></i> Connecté';
+    renderInventory();
+  } catch (error) {
+    console.error(error);
+    inventory.innerHTML = '<p class="text-red-500">Impossible de charger le matériel.</p>';
+    document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> Erreur';
+  }
+}
+
+async function refreshDisponibilites() {
+  const debut = inputDebut.value;
+  const fin = inputFin.value;
+  disponibilites = {};
+  if (!debut || !fin || fin < debut) {
+    renderInventory();
+    return;
+  }
+  try {
+    const response = await fetch(`/.netlify/functions/disponibilites?debut=${encodeURIComponent(debut)}&fin=${encodeURIComponent(fin)}`, { cache: 'no-store' });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Erreur disponibilité');
+    disponibilites = payload.disponibilites || {};
+    renderInventory();
+  } catch (error) {
+    console.error(error);
+    alert('Impossible de vérifier les disponibilités pour le moment.');
+    renderInventory();
+  }
+}
+
+function renderInventory() {
+  const datesOK = inputDebut.value && inputFin.value && inputFin.value >= inputDebut.value;
+  inventory.innerHTML = itemsData.map((item) => {
+    const stockDispo = datesOK ? Number(disponibilites[String(item.id)] ?? 0) : Number(item.stock_total || 0);
+    const indisponible = datesOK && stockDispo <= 0;
+    const badge = !datesOK ? `STOCK TOTAL : ${item.stock_total}` : indisponible ? 'INDISPONIBLE' : `DISPONIBLE : ${stockDispo}`;
+    const badgeClass = !datesOK ? 'bg-green-500' : indisponible ? 'bg-red-600' : 'bg-blue-600';
+    const imageUrl = safeImageUrl(item.image_url);
+    const image = imageUrl
+      ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.nom)}" class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105">`
+      : '<div class="text-gray-300 flex flex-col items-center"><i class="fas fa-image text-4xl"></i><span class="text-[10px] mt-2">Aucun visuel</span></div>';
+
+    return `<article class="border rounded-lg overflow-hidden flex flex-col bg-white shadow-sm transition-all hover:shadow-md ${indisponible ? 'opacity-75' : ''}">
+      <div class="h-48 bg-gray-50 relative flex items-center justify-center p-4 border-b">
+        ${image}
+        <span class="absolute top-2 right-2 ${badgeClass} text-white text-[10px] px-2 py-1 rounded font-bold uppercase shadow-sm">${escapeHtml(badge)}</span>
+      </div>
+      <div class="p-4 flex flex-col justify-between flex-grow">
+        <div>
+          <h3 class="font-bold text-gray-800 leading-tight">${escapeHtml(item.nom)}</h3>
+          <p class="text-gray-500 text-[11px] mt-2 line-clamp-2 italic leading-snug">${escapeHtml(item.description || 'Pas de description détaillée.')}</p>
+          <p class="text-indigo-600 font-bold mt-3 text-lg">${Number(item.prix || 0).toFixed(2)} €</p>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <input type="number" id="qty-${item.id}" min="1" max="${stockDispo}" value="1" ${!datesOK || indisponible ? 'disabled' : ''} class="w-14 border rounded text-center text-sm">
+          <button data-add="${item.id}" ${!datesOK || indisponible ? 'disabled' : ''} class="flex-1 text-white text-xs py-2 rounded font-bold ${!datesOK ? 'bg-gray-400 cursor-not-allowed' : indisponible ? 'bg-red-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}">
+            ${!datesOK ? 'Saisir dates' : indisponible ? 'Indisponible' : 'Ajouter'}
+          </button>
+        </div>
+      </div>
+    </article>`;
+  }).join('') || '<p class="text-gray-400">Aucun matériel disponible.</p>';
+}
+
+inventory.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-add]');
+  if (!button) return;
+  const id = Number(button.dataset.add);
+  const item = itemsData.find((i) => Number(i.id) === id);
+  const qty = Number(document.getElementById(`qty-${id}`).value);
+  const stock = Number(disponibilites[String(id)] ?? 0);
+  if (!item || !Number.isInteger(qty) || qty < 1) return;
+  const existing = panier.find((p) => Number(p.id) === id);
+  const totalQty = (existing?.qty || 0) + qty;
+  if (totalQty > stock) return alert(`Il ne reste que ${stock} exemplaire(s) pour ces dates.`);
+  if (existing) existing.qty = totalQty;
+  else panier.push({ ...item, qty });
+  majPanier();
+  button.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
+  setTimeout(renderInventory, 900);
+});
 
 function majPanier() {
-const container = document.getElementById('panierList');
-let totalP = 0, totalC = 0;
-container.innerHTML = panier.map((item, index) => {
-totalP += (item.qty * item.prix);
-totalC += (item.qty * (item.caution_unitaire || 0));
-return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
-               <span>${item.qty}x ${item.nom}</span>
-               <button onclick="supprimerItem(${index})" class="text-red-400"><i class="fas fa-times"></i></button>
-           </div>`;
-}).join('');
-document.getElementById('totalPrix').innerText = totalP.toFixed(2) + " €";
-document.getElementById('totalCaution').innerText = totalC.toFixed(2) + " €";
+  const container = document.getElementById('panierList');
+  let totalPrix = 0;
+  let totalCaution = 0;
+  if (!panier.length) {
+    container.innerHTML = '<p class="text-gray-400 italic text-center text-sm">Aucun article sélectionné</p>';
+  } else {
+    container.innerHTML = panier.map((item, index) => {
+      totalPrix += item.qty * Number(item.prix || 0);
+      totalCaution += item.qty * Number(item.caution_unitaire || 0);
+      return `<div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded"><span>${item.qty}x ${escapeHtml(item.nom)}</span><button data-remove="${index}" class="text-red-500" aria-label="Supprimer"><i class="fas fa-times"></i></button></div>`;
+    }).join('');
+  }
+  document.getElementById('totalPrix').textContent = `${totalPrix.toFixed(2)} €`;
+  document.getElementById('totalCaution').textContent = `${totalCaution.toFixed(2)} €`;
 }
-const genererLienCalendrier = (info) => {
-    const formatDate = (dateStr) => dateStr.replace(/-/g, '');
-    const start = formatDate(info.debut);
-    const end = formatDate(info.fin);
-    return `https://www.google.com/calendar/render?action=TEMPLATE&text=Location+Matériel+Loc'APEL&dates=${start}/${end}&details=Merci+pour+votre+réservation.+Votre+contrat+est+disponible+ici+:+${info.contrat}&location=Ecole+Sainte+Anne,+Casson`;
-};
 
-window.confirmerReservation = async () => {
-    // --- NOUVELLES VÉRIFICATIONS À COLLER ICI ---
-    const dateDebutVal = document.getElementById('date_debut').value;
-    const dateFinVal = document.getElementById('date_fin').value;
-    const dateDuJour = new Date().toISOString().split('T')[0];
+document.getElementById('panierList').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-remove]');
+  if (!button) return;
+  panier.splice(Number(button.dataset.remove), 1);
+  majPanier();
+});
 
-    if (!dateDebutVal || !dateFinVal) {
-        alert("⚠️ Veuillez saisir les dates de début et de fin.");
-        return; 
-    }
-
-    if (dateDebutVal < dateDuJour) {
-        alert("⚠️ La date de début ne peut pas être passée.");
-        return;
-    }
-
-    if (dateFinVal < dateDebutVal) {
-        alert("⚠️ La date de retour doit être après la date de départ.");
-        return;
-    }
-    // --- FIN DES NOUVELLES VÉRIFICATIONS ---
-        const rgpdChecked = document.getElementById('rgpd_consent').checked;
-if (!rgpdChecked) {
-    alert("⚠️ Vous devez accepter l'utilisation de vos données pour valider la réservation.");
-    return;
+function formInfo() {
+  return {
+    nom: document.getElementById('nom_loueur').value.trim(),
+    adresse: document.getElementById('adresse_loueur').value.trim(),
+    cp: document.getElementById('cp_loueur').value.trim(),
+    ville: document.getElementById('ville_loueur').value.trim(),
+    email: document.getElementById('email_loueur').value.trim(),
+    tel: document.getElementById('tel_loueur').value.trim(),
+    debutISO: inputDebut.value,
+    finISO: inputFin.value,
+    debut: inputDebut.value.split('-').reverse().join('/'),
+    fin: inputFin.value.split('-').reverse().join('/')
+  };
 }
-const btn = document.getElementById('btnSubmit');
-const info = {
-    nom: document.getElementById('nom_loueur').value,
-    adresse: document.getElementById('adresse_loueur').value,
-    cp: document.getElementById('cp_loueur').value,
-    ville: document.getElementById('ville_loueur').value,
-    email: document.getElementById('email_loueur').value,
-    tel: document.getElementById('tel_loueur').value,
-    // Transformation directe : "2026-05-04" devient ["2026","05","04"] puis ["04","05","2026"] puis "04/05/2026"
-    debut: document.getElementById('date_debut').value.split('-').reverse().join('/'),
-    fin: document.getElementById('date_fin').value.split('-').reverse().join('/'),
-    totalP: document.getElementById('totalPrix').innerText,
-    totalC: document.getElementById('totalCaution').innerText
-};
 
-// Pensez à mettre à jour la vérification si vous voulez que l'adresse soit obligatoire
-if (!info.nom || !info.adresse || !info.email || panier.length === 0) return alert("Veuillez remplir toutes les informations (Nom, Adresse, Email).");
-
-btn.disabled = true;
-btn.innerText = "Génération et envoi en cours...";
-
-const docDefinition = {
-pageSize: 'A4',
-pageMargins: [40, 40, 40, 40],
-content: [
-{ text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', style: 'mainTitle' },
-{ canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] },
-{ text: '\n' },
-
-{
-    columns: [
+function buildPdf(info) {
+  const totalP = panier.reduce((sum, i) => sum + i.qty * Number(i.prix || 0), 0);
+  const totalC = panier.reduce((sum, i) => sum + i.qty * Number(i.caution_unitaire || 0), 0);
+  return {
+    pageSize: 'A4', pageMargins: [40, 40, 40, 40],
+    content: [
+      { text: 'CONTRAT DE LOCATION - ECOLE SAINTE ANNE CASSON', style: 'mainTitle' },
+      { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5 }] }, { text: '\n' },
+      { columns: [
         { width: '*', stack: ['OGEC SERVICE LOCATION', 'ECOLE SAINTE ANNE', '2 Rue du château', '44390 CASSON', 'loc.ecolesteanne@gmail.com'], fontSize: 9 },
-        { 
-            width: 200, 
-            stack: [
-                { text: info.nom, bold: true }, 
-                info.adresse, 
-                `${info.cp} ${info.ville}`, 
-                `Tél : ${info.tel}`, 
-                `Mail : ${info.email}`
-            ], 
-            alignment: 'right', 
-            fontSize: 9 
-        }
-    ]
-},
-{ text: '\n1- Date de Location:', style: 'sectionHeader' },
-{ text: `Date de départ : ${info.debut}       Date de retour : ${info.fin}`, margin: [10, 5, 0, 15], fontSize: 10 },
-{ text: '2- Matériels loués :', style: 'sectionHeader' },
-{
-table: {
-headerRows: 1,
-widths: ['*', 'auto', 'auto', 'auto'],
-body: [
-[{text:'Articles', style:'tableHeader'}, {text:'Quantités', style:'tableHeader', alignment:'center'}, {text:'Caution/u', style:'tableHeader', alignment:'right'}, {text:'Prix Total', style:'tableHeader', alignment:'right'}],
-...panier.map(i => [i.nom, i.qty.toString(), `${(i.caution_unitaire || 0).toFixed(2)} €`, `${(i.qty * i.prix).toFixed(2)} €`])
-]
-}, layout: 'lightHorizontalLines'
-},
-{ text: '\n' },
-{
-table: {
-widths: ['*'],
-body: [[{
-stack: [
-{ text: '3- Montant à régler/Caution:', bold: true, fontSize: 10 },
-{ text: `Montant Total à régler : ${info.totalP}`, margin: [0, 5, 0, 0] },
-{ text: `Montant chèque de caution : ${info.totalC}`, bold: true }
-], padding: [10, 10, 10, 10]
-}]]
+        { width: 210, stack: [{ text: info.nom, bold: true }, info.adresse, `${info.cp} ${info.ville}`, `Tél : ${info.tel}`, `Mail : ${info.email}`], alignment: 'right', fontSize: 9 }
+      ]},
+      { text: '\n1- Date de location :', style: 'sectionHeader' },
+      { text: `Date de départ : ${info.debut}       Date de retour : ${info.fin}`, margin: [10, 5, 0, 15], fontSize: 10 },
+      { text: '2- Matériels loués :', style: 'sectionHeader' },
+      { table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto'], body: [
+        [{ text: 'Articles', style: 'tableHeader' }, { text: 'Quantités', style: 'tableHeader' }, { text: 'Caution/u', style: 'tableHeader' }, { text: 'Prix total', style: 'tableHeader' }],
+        ...panier.map((i) => [i.nom, String(i.qty), `${Number(i.caution_unitaire || 0).toFixed(2)} €`, `${(i.qty * Number(i.prix || 0)).toFixed(2)} €`])
+      ]}, layout: 'lightHorizontalLines' },
+      { text: '\n3- Montant à régler / caution :', style: 'sectionHeader' },
+      { text: `Montant total à régler : ${totalP.toFixed(2)} €\nMontant du chèque de caution : ${totalC.toFixed(2)} €`, margin: [10, 5, 0, 10] },
+      { text: '4- Etat du matériel :', style: 'sectionHeader' },
+      { text: 'Remarques / observations :', fontSize: 9, color: '#666' },
+      { canvas: [{ type: 'rect', x: 0, y: 5, w: 515, h: 40, lineWidth: 0.5, lineColor: '#ccc' }] },
+      { text: '\n5- Conditions :', style: 'sectionHeader' },
+      { ul: [
+        { text: 'Une caution sera demandée lors de la remise du matériel.', fontSize: 8 },
+        { text: 'La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel.', fontSize: 8 },
+        { text: 'Le locataire est responsable du matériel pendant toute la durée de la location.', fontSize: 8 },
+        { text: 'Le matériel devra être restitué complet, propre et en bon état.', fontSize: 8 }
+      ]},
+      { text: "CE CONTRAT NE FAIT FOI QU'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L'OGEC", alignment: 'center', bold: true, fontSize: 10, margin: [0, 15, 0, 20] },
+      { columns: [{ text: 'Signature OGEC :\n\n', decoration: 'underline' }, { text: 'Signature loueur :\n\n', decoration: 'underline', alignment: 'right' }] }
+    ],
+    styles: {
+      mainTitle: { fontSize: 14, bold: true, alignment: 'center' },
+      sectionHeader: { fontSize: 11, bold: true, background: '#e5e7eb', margin: [0, 15, 0, 5] },
+      tableHeader: { fontSize: 9, bold: true, fillColor: '#f3f4f6' }
+    }
+  };
 }
-},
-{ text: '\n4- Etat du matériel:', style: 'sectionHeader' },
-{ text: 'Remarques/observations :', fontSize: 9, color: '#666' },
-{ canvas: [{ type: 'rect', x: 0, y: 5, w: 515, h: 40, lineWidth: 0.5, lineColor: '#ccc' }] },
-{ text: '\n5- Conditions:', style: 'sectionHeader' },
-{
-ul: [
-{ text: 'Une caution sera demandée lors de la remise du matériel.', fontSize: 8 },
-{ text: 'La caution ne sera pas encaissée sauf en cas de détérioration, perte ou non-restitution du matériel. Dans ce cas, tout ou partie de la caution pourra être conservée afin de couvrir les frais de réparation ou de remplacement.', fontSize: 8 },
-{ text: 'Le locataire est responsable du matériel pendant toute la durée de la location, depuis sa prise en charge jusqu\'à sa restitution.', fontSize: 8 },
-{ text: 'Le matériel devra être restitué complet, propre et en bon état. Toute anomalie constatée pourra entraîner l\'application de retenues sur la caution.', fontSize: 8 }
-], margin: [0, 5, 0, 10]
-},
-{ text: 'CE CONTRAT NE FAIT FOI QU\'APRÈS CONFIRMATION PAR MAIL OU TÉLÉPHONE DE LA PART DE L\'OGEC', alignment: 'center', bold: true, fontSize: 10, margin: [0, 15, 0, 20] },
-{
-columns: [
-{ stack: [{ text: 'Signature OGEC :', decoration: 'underline', fontSize: 10 }, { text: '\n\n' }] },
-{ stack: [{ text: 'Signature loueur :', decoration: 'underline', fontSize: 10, alignment: 'right' }, { text: '\n\n' }] }
-]
+
+function pdfToBase64(docDefinition) {
+  return new Promise((resolve) => pdfMake.createPdf(docDefinition).getBase64(resolve));
 }
-],
-styles: {
-mainTitle: { fontSize: 14, bold: true, alignment: 'center' },
-sectionHeader: { fontSize: 11, bold: true, background: '#e5e7eb', margin: [0, 15, 0, 5] },
-tableHeader: { fontSize: 9, bold: true, fillColor: '#f3f4f6' }
-}
-};
 
-try {
-const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+document.getElementById('btnSubmit').addEventListener('click', async () => {
+  const info = formInfo();
+  if (!info.debutISO || !info.finISO || info.finISO < info.debutISO || info.debutISO < today) return alert('Veuillez saisir une période valide.');
+  if (!document.getElementById('rgpd_consent').checked) return alert("Vous devez accepter l'utilisation de vos données.");
+  if (!info.nom || !info.adresse || !info.cp || !info.ville || !info.email || !info.tel) return alert('Veuillez remplir tous les champs obligatoires.');
+  if (!panier.length) return alert('Votre panier est vide.');
 
-// ... (reste du code identique au-dessus)
+  const button = document.getElementById('btnSubmit');
+  button.disabled = true;
+  button.textContent = 'Génération et envoi en cours...';
 
-pdfDocGenerator.getBlob(async (blob) => {
-    const fileName = `contrat_${Date.now()}_${info.nom.replace(/\s/g, '_')}.pdf`;
-    
-    // 1. UPLOAD DANS LE STORAGE
-    const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('contrats')
-        .upload(fileName, blob, { contentType: 'application/pdf' });
-
-    if (uploadError) throw uploadError;
-
-    // 2. RÉCUPÉRATION DU LIEN PUBLIC
-    const { data: urlData } = supabase.storage
-        .from('contrats')
-        .getPublicUrl(fileName);
-    
-   const publicUrl = urlData.publicUrl;
-
-    // 1. Préparation de la liste d'articles pour le mail (HTML)
-    const listeArticlesHtml = panier.map(i => `<li>${i.qty}x ${i.nom}</li>`).join('');
-
-    // 2. ENREGISTREMENT DANS LA TABLE RESERVATIONS
-  // --- NOUVEAU BLOC SÉCURISÉ ---
-const responseProxy = await fetch('/.netlify/functions/reserver', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  try {
+    const pdfBase64 = await pdfToBase64(buildPdf(info));
+    const response = await fetch('/.netlify/functions/reserver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         nom_loueur: info.nom,
+        adresse: info.adresse,
+        cp: info.cp,
+        ville: info.ville,
         email: info.email,
         telephone: info.tel,
-        date_debut: dateDebutVal, 
-        date_fin: dateFinVal,     
-        total_prix: parseFloat(info.totalP), 
-        total_caution: parseFloat(info.totalC),
-        pdf_url: publicUrl,
-        articles: panier,        
-        statut: 'En attente'
-    })
-});
-
-// Vérification si le proxy a bien travaillé
-if (!responseProxy.ok) {
-    const errorData = await responseProxy.json();
-    throw new Error(errorData.error || "Le serveur sécurisé a refusé l'enregistrement");
-}
-// --- FIN DU NOUVEAU BLOC ---
-// --- DÉBUT ALERTE ADMIN MAKE CORRIGÉ ---
-const part1 = "https://hook.eu1.make.com/";
-const part2 = "apcapqrfu7fv7rqab0xp428aak6xtu4o";
-
-fetch(part1 + part2, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        client: info.nom,
-        dates: `du ${info.debut} au ${info.fin}`,
-        montant: info.totalP,
-        contrat: publicUrl,
-        message: "Une nouvelle demande de location vient d'être déposée sur le site."
-    })
-}).catch(err => console.log("Erreur envoi alerte Make:", err));
-// --- FIN ALERTE ADMIN MAKE ---
-    // 3. ENVOI DU MAIL AVEC LE RÉCAPITULATIF
-    await emailjs.send('service_63g35od', 'template_gb5d2wt', {
-        nom_loueur: info.nom,
-        email_destinataire: info.email,
-        // On remplit la variable message_html avec la liste
-        message_html: `
-            <p>Nouvelle réservation de <strong>${info.nom}</strong> du <strong>${info.debut}</strong> au <strong>${info.fin}</strong> .</p>
-            <p><strong>Articles loués :</strong></p>
-            <ul>${listeArticlesHtml}</ul>
-            <p><strong>Total :</strong> ${info.totalP} (Caution: ${info.totalC})</p>
-            <p>Lien du contrat : <a href="${publicUrl}" target="_blank">Cliquez ici pour voir le PDF</a></p>
-        `
+        date_debut: info.debutISO,
+        date_fin: info.finISO,
+        articles: panier.map((i) => ({ id: Number(i.id), qty: Number(i.qty) })),
+        pdf_base64: pdfBase64,
+        website: document.getElementById('website').value
+      })
     });
-    //pdfDocGenerator.download(fileName); "FONCTION EN VEILLE"
-    alert("Réussite ! La réservation est enregistrée en base de données et le mail est envoyé.");
-    window.location.reload();
-});
-} catch (err) {
-        console.error(err);
-        alert("Erreur lors de la réservation.");
-        btn.disabled = false;
-        btn.innerText = "Confirmer la réservation";
-    }
-};
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'La réservation a été refusée par le serveur.');
 
-fetchMateriels();
+    const link = payload.contract_url
+      ? `\n\nVotre contrat temporaire : ${payload.contract_url}`
+      : '';
+    alert(`Réservation enregistrée. Elle reste en attente de confirmation par l'OGEC.${link}`);
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'Erreur lors de la réservation.');
+    button.disabled = false;
+    button.textContent = 'Confirmer la réservation';
+    await refreshDisponibilites();
+  }
+});
+
+await fetchMateriels();
 </script>
+</body>
 </html>
